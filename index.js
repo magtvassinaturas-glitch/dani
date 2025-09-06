@@ -7,7 +7,7 @@ const app = express();
 app.use(bodyParser.json());
 
 // === CONFIGURAÇÕES ===
-const GEMINI_API_KEY = "AIzaSyCzxGaTZOEmfYimIXihmRprOUK68aieJxI";
+const GEMINI_API_KEY = "AIzaSyD3XytFWOP6mQaX6KwvGGEH5WlNudH21yw";
 const TMDB_API_KEY = "92e56e9320cc546a391ed450be8acf1b";
 
 // Abre o catálogo.db
@@ -16,14 +16,12 @@ let db = new sqlite3.Database('./catalogo.db', sqlite3.OPEN_READONLY, (err) => {
     else console.log('Conectado ao catálogo.db!');
 });
 
-// Função para limpar título
 function limparTitulo(titulo) {
     return titulo.replace(/S\d{2}E\d{2}/gi, '')
                  .replace(/S\d{2}/gi, '')
                  .trim();
 }
 
-// Função de busca no catálogo transformada em Promise
 function buscarNoCatalogoAsync(titulo) {
     const tituloLimpo = limparTitulo(titulo);
     return new Promise((resolve, reject) => {
@@ -34,7 +32,6 @@ function buscarNoCatalogoAsync(titulo) {
     });
 }
 
-// Função para buscar no TMDB
 async function buscarTMDB(titulo, tipo='movie') {
     const url = `https://api.themoviedb.org/3/search/${tipo}?api_key=${TMDB_API_KEY}&query=${encodeURIComponent(titulo)}`;
     try {
@@ -57,26 +54,24 @@ async function buscarTMDB(titulo, tipo='movie') {
     }
 }
 
-// Função para chamar Gemini
 async function chamarGemini(prompt) {
     const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${GEMINI_API_KEY}`;
     try {
         const res = await axios.post(url, {
             contents: [{ parts: [{ text: prompt }] }]
         });
+        console.log('Resposta Gemini:', res.data);
         return res.data.candidates[0].content.parts[0].text;
     } catch (err) {
-        console.error("Erro Gemini:", err);
+        console.error("Erro detalhado Gemini:", err.response ? err.response.data : err.message);
         return "Desculpe, não consegui responder agora.";
     }
 }
 
-// === WEBHOOK PRINCIPAL ===
 app.post('/webhook', async (req, res) => {
     const pesquisaUsuarioOriginal = req.body.queryResult.queryText;
     const pesquisaUsuario = limparTitulo(pesquisaUsuarioOriginal);
 
-    // Verifica contexto do menu
     const contextoMenu = req.body.queryResult.outputContexts.find(c => c.name.includes('menu_principal'));
     const opcaoMenu = contextoMenu ? contextoMenu.parameters.opcaoMenu : null;
 
@@ -107,7 +102,6 @@ app.post('/webhook', async (req, res) => {
     }
 });
 
-// Inicializa o servidor
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
     console.log(`Webhook rodando na porta ${PORT}`);

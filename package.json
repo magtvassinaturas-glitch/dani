@@ -9,15 +9,7 @@
     "lint": "eslint .",
     "test": "echo \"No tests specified\" && exit 0"
   },
-  "keywords": [
-    "iptv",
-    "dialogflow",
-    "gemini",
-    "tmdb",
-    "bot",
-    "nodejs",
-    "webhook"
-  ],
+  "keywords": ["iptv", "dialogflow", "gemini", "tmdb", "bot", "nodejs", "webhook"],
   "author": "Seu Nome",
   "license": "MIT",
   "dependencies": {
