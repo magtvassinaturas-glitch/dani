@@ -16,23 +16,21 @@ let db = new sqlite3.Database('./catalogo.db', sqlite3.OPEN_READONLY, (err) => {
     else console.log('Conectado ao catálogo.db!');
 });
 
-// Função para limpar título (remove S01E01, S02 etc)
+// Função para limpar título
 function limparTitulo(titulo) {
     return titulo.replace(/S\d{2}E\d{2}/gi, '')
                  .replace(/S\d{2}/gi, '')
                  .trim();
 }
 
-// Função para buscar no catálogo.db
-function buscarNoCatalogo(titulo, callback) {
+// Função de busca no catálogo transformada em Promise
+function buscarNoCatalogoAsync(titulo) {
     const tituloLimpo = limparTitulo(titulo);
-    db.all("SELECT * FROM catalogo WHERE titulo LIKE ?", [`%${tituloLimpo}%`], (err, rows) => {
-        if (err) {
-            console.error(err.message);
-            callback([]);
-        } else {
-            callback(rows);
-        }
+    return new Promise((resolve, reject) => {
+        db.all("SELECT * FROM catalogo WHERE titulo LIKE ?", [`%${tituloLimpo}%`], (err, rows) => {
+            if (err) reject(err);
+            else resolve(rows);
+        });
     });
 }
 
@@ -75,7 +73,6 @@ async function chamarGemini(prompt) {
 
 // === WEBHOOK PRINCIPAL ===
 app.post('/webhook', async (req, res) => {
-    const intent = req.body.queryResult.intent.displayName;
     const pesquisaUsuarioOriginal = req.body.queryResult.queryText;
     const pesquisaUsuario = limparTitulo(pesquisaUsuarioOriginal);
 
@@ -83,33 +80,31 @@ app.post('/webhook', async (req, res) => {
     const contextoMenu = req.body.queryResult.outputContexts.find(c => c.name.includes('menu_principal'));
     const opcaoMenu = contextoMenu ? contextoMenu.parameters.opcaoMenu : null;
 
-    // Se o usuário não escolheu Catálogo (opção 4) → Gemini atende
-    if(opcaoMenu !== 4){
-        const respostaGemini = await chamarGemini(pesquisaUsuarioOriginal);
-        return res.json({ fulfillmentText: respostaGemini });
+    try {
+        if(opcaoMenu === 4){
+            const resultados = await buscarNoCatalogoAsync(pesquisaUsuario);
+            if (resultados.length === 0) {
+                return res.json({ fulfillmentText: `Não encontrei nenhum título correspondente a "${pesquisaUsuarioOriginal}".` });
+            }
+            const tipo = resultados[0].titulo.match(/S\d{2}/i) ? 'tv' : 'movie';
+            const info = await buscarTMDB(pesquisaUsuario, tipo);
+            if (!info) {
+                return res.json({ fulfillmentText: `Encontrei no catálogo, mas não localizei detalhes no TMDB para "${pesquisaUsuarioOriginal}".` });
+            }
+            let responseText = `🎬 ${info.titulo}\n\n${info.sinopse}\n\n`;
+            if (tipo === 'movie') responseText += `📅 Lançamento: ${info.lancamento}\n`;
+            if (tipo === 'tv') responseText += `📺 Temporadas disponíveis: ${info.temporadas}\n`;
+            if (info.poster) responseText += `${info.poster}\n`;
+            responseText += `\nDeseja pesquisar outro título ou voltar ao menu?`;
+            return res.json({ fulfillmentText: responseText });
+        } else {
+            const respostaGemini = await chamarGemini(pesquisaUsuarioOriginal);
+            return res.json({ fulfillmentText: respostaGemini });
+        }
+    } catch (err) {
+        console.error(err);
+        return res.json({ fulfillmentText: "Ocorreu um erro ao processar sua solicitação." });
     }
-
-    // Se o usuário escolheu Catálogo (opção 4) → pesquisa títulos
-    buscarNoCatalogo(pesquisaUsuario, async (resultados) => {
-        if (resultados.length === 0) {
-            return res.json({ fulfillmentText: `Não encontrei nenhum título correspondente a "${pesquisaUsuarioOriginal}".` });
-        }
-
-        const tipo = resultados[0].titulo.match(/S\d{2}/i) ? 'tv' : 'movie';
-        const info = await buscarTMDB(pesquisaUsuario, tipo);
-
-        if (!info) {
-            return res.json({ fulfillmentText: `Encontrei no catálogo, mas não localizei detalhes no TMDB para "${pesquisaUsuarioOriginal}".` });
-        }
-
-        let responseText = `🎬 ${info.titulo}\n\n${info.sinopse}\n\n`;
-        if (tipo === 'movie') responseText += `📅 Lançamento: ${info.lancamento}\n`;
-        if (tipo === 'tv') responseText += `📺 Temporadas disponíveis: ${info.temporadas}\n`;
-        if (info.poster) responseText += `${info.poster}\n`;
-        responseText += `\nDeseja pesquisar outro título ou voltar ao menu?`;
-
-        return res.json({ fulfillmentText: responseText });
-    });
 });
 
 // Inicializa o servidor
