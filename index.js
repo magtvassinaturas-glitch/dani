@@ -7,7 +7,7 @@ const app = express();
 app.use(bodyParser.json());
 
 // === CONFIGURAÇÕES ===
-const GEMINI_API_KEY = "AIzaSyD3XytFWOP6mQaX6KwvGGEH5WlNudH21yw";
+const GEMINI_API_KEY = "AIzaSyBbpvaMuLfJfWytvmGGsxnZqNSdccWQlgU";
 const TMDB_API_KEY = "92e56e9320cc546a391ed450be8acf1b";
 
 // Abre o catálogo.db
