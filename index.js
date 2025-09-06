@@ -54,14 +54,20 @@ async function buscarTMDB(titulo, tipo='movie') {
     }
 }
 
+// === Nova função Gemini compatível com text-bison-001 ===
 async function chamarGemini(prompt) {
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${GEMINI_API_KEY}`;
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/text-bison-001:generateText?key=${GEMINI_API_KEY}`;
     try {
         const res = await axios.post(url, {
-            contents: [{ parts: [{ text: prompt }] }]
+            prompt: {
+                text: prompt
+            },
+            temperature: 0.7,
+            maxOutputTokens: 500
         });
-        console.log('Resposta Gemini:', res.data);
-        return res.data.candidates[0].content.parts[0].text;
+        const resposta = res.data.candidates && res.data.candidates[0] && res.data.candidates[0].output;
+        console.log('Resposta Gemini:', resposta);
+        return resposta || "Desculpe, não consegui responder agora.";
     } catch (err) {
         console.error("Erro detalhado Gemini:", err.response ? err.response.data : err.message);
         return "Desculpe, não consegui responder agora.";
