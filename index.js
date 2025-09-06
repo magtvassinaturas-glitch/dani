@@ -79,36 +79,29 @@ app.post('/webhook', async (req, res) => {
     const pesquisaUsuarioOriginal = req.body.queryResult.queryText;
     const pesquisaUsuario = limparTitulo(pesquisaUsuarioOriginal);
 
-    // Intenção de voltar ao menu
-    if (intent === 'Voltar ao Menu') {
-        const responseText = `Olá! 😃 Escolha uma opção:\n1️⃣ Novo Cliente\n2️⃣ Pagamento\n3️⃣ Catálogo`;
-        return res.json({ fulfillmentText: responseText, outputContexts: [] });
+    // Verifica contexto do menu
+    const contextoMenu = req.body.queryResult.outputContexts.find(c => c.name.includes('menu_principal'));
+    const opcaoMenu = contextoMenu ? contextoMenu.parameters.opcaoMenu : null;
+
+    // Se o usuário não escolheu Catálogo (opção 4) → Gemini atende
+    if(opcaoMenu !== 4){
+        const respostaGemini = await chamarGemini(pesquisaUsuarioOriginal);
+        return res.json({ fulfillmentText: respostaGemini });
     }
 
-    // Intenção de pesquisar outro título
-    if (intent === 'Pesquisar Outro Título') {
-        const responseText = 'Digite o título que deseja pesquisar:';
-        return res.json({ fulfillmentText: responseText });
-    }
-
-    // Busca no catálogo.db
+    // Se o usuário escolheu Catálogo (opção 4) → pesquisa títulos
     buscarNoCatalogo(pesquisaUsuario, async (resultados) => {
         if (resultados.length === 0) {
-            // Se não encontrou no catálogo, passa a pergunta para o Gemini
-            const respostaGemini = await chamarGemini(pesquisaUsuarioOriginal);
-            return res.json({ fulfillmentText: respostaGemini });
+            return res.json({ fulfillmentText: `Não encontrei nenhum título correspondente a "${pesquisaUsuarioOriginal}".` });
         }
 
-        // Decide tipo (filme ou série)
         const tipo = resultados[0].titulo.match(/S\d{2}/i) ? 'tv' : 'movie';
-
-        // Busca no TMDB
         const info = await buscarTMDB(pesquisaUsuario, tipo);
+
         if (!info) {
             return res.json({ fulfillmentText: `Encontrei no catálogo, mas não localizei detalhes no TMDB para "${pesquisaUsuarioOriginal}".` });
         }
 
-        // Monta a resposta
         let responseText = `🎬 ${info.titulo}\n\n${info.sinopse}\n\n`;
         if (tipo === 'movie') responseText += `📅 Lançamento: ${info.lancamento}\n`;
         if (tipo === 'tv') responseText += `📺 Temporadas disponíveis: ${info.temporadas}\n`;
