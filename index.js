@@ -2,17 +2,13 @@ const express = require('express');
 const bodyParser = require('body-parser');
 const sqlite3 = require('sqlite3').verbose();
 const axios = require('axios');
-const { Configuration, OpenAIApi } = require("openai");
 
 const app = express();
 app.use(bodyParser.json());
 
-// === CONFIGURAÇÕES ===
-const OPENAI_API_KEY = "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";
-const TMDB_API_KEY = "92e56e9320cc546a391ed450be8acf1b";
-
-const configuration = new Configuration({ apiKey: OPENAI_API_KEY });
-const openai = new OpenAIApi(configuration);
+// === CONFIGURAÇÕES VIA VARIÁVEIS DE AMBIENTE ===
+const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
+const TMDB_API_KEY = process.env.TMDB_API_KEY;
 
 // Abre o catálogo.db
 let db = new sqlite3.Database('./catalogo.db', sqlite3.OPEN_READONLY, (err) => {
@@ -58,20 +54,20 @@ async function buscarTMDB(titulo, tipo='movie') {
     }
 }
 
-// === Nova função usando ChatGPT ===
-async function chamarChatGPT(prompt) {
+// === Função usando Gemini ===
+async function chamarGemini(prompt) {
     try {
-        const response = await openai.createChatCompletion({
-            model: "gpt-3.5-turbo",
-            messages: [{ role: "user", content: prompt }],
-            temperature: 0.7,
-            max_tokens: 500
-        });
-        const resposta = response.data.choices[0].message.content;
-        console.log('Resposta ChatGPT:', resposta);
+        const response = await axios.post(
+            "https://generativelanguage.googleapis.com/v1beta/models/text-bison-001:generateText",
+            { prompt: { text: prompt } },
+            { headers: { "Authorization": `Bearer ${GEMINI_API_KEY}`, "Content-Type": "application/json" } }
+        );
+
+        const resposta = response.data.candidates?.[0]?.output;
+        console.log("Resposta Gemini:", resposta);
         return resposta || "Desculpe, não consegui responder agora.";
     } catch (err) {
-        console.error("Erro ChatGPT:", err.response ? err.response.data : err.message);
+        console.error("Erro Gemini:", err.response ? err.response.data : err.message);
         return "Desculpe, não consegui responder agora.";
     }
 }
@@ -101,7 +97,7 @@ app.post('/webhook', async (req, res) => {
             responseText += `\nDeseja pesquisar outro título ou voltar ao menu?`;
             return res.json({ fulfillmentText: responseText });
         } else {
-            const respostaChat = await chamarChatGPT(pesquisaUsuarioOriginal);
+            const respostaChat = await chamarGemini(pesquisaUsuarioOriginal);
             return res.json({ fulfillmentText: respostaChat });
         }
     } catch (err) {
