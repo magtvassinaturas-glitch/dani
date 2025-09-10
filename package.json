@@ -1,13 +1,32 @@
 {
   "name": "dani-bot",
   "version": "1.0.0",
+  "description": "Atendimento Magtv com Dani, catálogo TMDB e API Gemini",
   "type": "module",
   "main": "index.js",
   "scripts": {
-    "start": "node index.js"
+    "start": "node index.js",
+    "dev": "nodemon index.js"
+  },
+  "engines": {
+    "node": ">=18.0.0"
   },
   "dependencies": {
+    "cors": "^2.8.5",
+    "dotenv": "^16.3.1",
     "express": "^4.18.2",
-    "cors": "^2.8.5"
-  }
+    "node-fetch": "^3.3.2"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.1"
+  },
+  "keywords": [
+    "chatbot",
+    "IPTV",
+    "Dialogflow",
+    "TMDB",
+    "Gemini"
+  ],
+  "author": "Magtv Assistente Dani",
+  "license": "MIT"
 }
