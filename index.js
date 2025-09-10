@@ -1,101 +1,102 @@
 import express from "express";
-import cors from "cors";
-import dotenv from "dotenv";
-import { getTMDBDetails } from "./tmdb.js";
-import { sendGeminiResponse } from "./gemini.js";
-
-dotenv.config();
+import bodyParser from "body-parser";
+import { buscarFilmeOuSerie } from "./tmdb.js";
 
 const app = express();
-app.use(cors());
-app.use(express.json());
-
 const PORT = process.env.PORT || 10000;
 
-// Usuários que estão no modo catálogo
-const catalogModeUsers = new Set();
+app.use(bodyParser.json());
 
-const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+console.log("Webhook rodando na porta", PORT);
 
-// Função para processar menu 1,2,3
-async function processMenuOption(userId, option, userMessage) {
-  switch (option) {
-    case "1":
-      await delay(4000);
-      const greeting = await sendGeminiResponse(`Atendimento inicial para usuário: ${userMessage}`);
-      return greeting;
-    case "2":
-      await delay(4000);
-      return "💳 Para pagamento via PIX:\nChave: 94 98444-5961\nNome: Davi Eduardo Borges\nValor: R$ 30,00\nPor favor, envie o comprovante após o pagamento.";
-    case "3":
-      await delay(4000);
-      return "🛟 Aguarde um momento, vou encaminhar seu atendimento para o suporte.";
+// Função para simular delay humanizado
+const delay = (ms) => new Promise((res) => setTimeout(res, ms));
+
+// Função para enviar mensagens (simulada, adapte para seu webhook real)
+async function enviarMensagem(clienteId, mensagem) {
+  console.log(`[Mensagem para ${clienteId}]:`, mensagem);
+  await delay(4000); // 4s de delay
+}
+
+// Função principal de atendimento
+async function atendimentoDani(clienteId, input, estado) {
+  switch (estado.menu) {
+    case "inicio":
+      await enviarMensagem(clienteId, "Olá! Aqui é a Dani do Atendimento Magtv! 👋");
+      await enviarMensagem(clienteId, "Como se chama?");
+      estado.menu = "aguardando_nome";
+      break;
+
+    case "aguardando_nome":
+      estado.nome = input;
+      await enviarMensagem(clienteId, `Prazer ${estado.nome}! 👋`);
+      await enviarMensagem(clienteId, "📋 *Menu Principal*:\n1️⃣ Novo Cliente\n2️⃣ Pagamento\n3️⃣ Suporte\n4️⃣ Catálogo");
+      estado.menu = "menu";
+      break;
+
+    case "menu":
+      if (input === "1") {
+        estado.menu = "novo_cliente";
+        await enviarMensagem(clienteId, "Ótimo! Vou te explicar nosso plano de assinatura.");
+        await enviarMensagem(clienteId, "👉 Mensal: R$30,00");
+        await enviarMensagem(clienteId, "Inclui mais de 2.000 canais, 20.000 filmes, 14.000 séries, animes e desenhos.");
+        await enviarMensagem(clienteId, "Nosso serviço funciona em Smart TVs Samsung, LG, Roku e dispositivos Android via nosso app exclusivo.");
+        await enviarMensagem(clienteId, "Gostaria de fazer o teste gratuito de 3 horas?");
+        estado.menu = "teste_gratuito";
+      } else if (input === "4") {
+        estado.menu = "catalogo";
+        await enviarMensagem(clienteId, "Digite o nome do filme ou série que deseja pesquisar:");
+      } else {
+        await enviarMensagem(clienteId, "Opção inválida. Por favor, escolha de 1 a 4.");
+      }
+      break;
+
+    case "teste_gratuito":
+      if (input.toLowerCase() === "sim") {
+        await enviarMensagem(clienteId, "Ótimo! Vamos começar o tutorial de instalação.");
+        estado.menu = "tutorial_inicial";
+      } else {
+        await enviarMensagem(clienteId, "Sem problemas! Obrigado pelo seu interesse. 😊");
+        estado.menu = "menu";
+      }
+      break;
+
+    case "catalogo":
+      const resultado = await buscarFilmeOuSerie(input);
+      if (!resultado) {
+        await enviarMensagem(clienteId, "Não encontrei esse título 😕. Tente outro.");
+      } else {
+        let msg = `🎬 Título: ${resultado.title}\n📝 Sinopse: ${resultado.overview}\n📅 Lançamento: ${resultado.release_date}`;
+        if (resultado.media_type === "tv") {
+          msg += `\n📺 Temporadas disponíveis: ${resultado.seasons || "—"}`;
+        }
+        await enviarMensagem(clienteId, msg);
+      }
+      await enviarMensagem(clienteId, "Deseja pesquisar outro título ou voltar ao menu principal?");
+      estado.menu = "menu";
+      break;
+
     default:
-      return "❌ Opção inválida. Por favor, selecione uma opção do menu (1 a 4).";
+      await enviarMensagem(clienteId, "Desculpe, não consegui entender. Voltando ao menu principal.");
+      estado.menu = "menu";
+      break;
   }
 }
 
+// Simulação de estado do cliente
+const clientes = {};
+
+// Endpoint webhook
 app.post("/", async (req, res) => {
-  try {
-    const userId = req.body.originalDetectIntentRequest?.payload?.userId || "default_user";
-    const userMessage = req.body.queryResult?.queryText?.trim() || "";
+  const clienteId = req.body.clienteId || "teste";
+  const mensagem = req.body.mensagem || "";
 
-    console.log(`[Mensagem recebida] User: ${userId} Msg: ${userMessage}`);
-
-    // Se mensagem for 4️⃣ ativa modo catálogo
-    if (userMessage === "4") {
-      catalogModeUsers.add(userId);
-      await delay(4000);
-      return res.status(200).json({
-        fulfillmentText: "🎞️ Ótimo! Envie o nome do filme ou série que deseja buscar."
-      });
-    }
-
-    // Se usuário está em modo catálogo
-    if (catalogModeUsers.has(userId)) {
-      if (userMessage.match(/^[1-4]$/)) {
-        // usuário quer voltar para o menu
-        catalogModeUsers.delete(userId);
-        await delay(4000);
-        return res.status(200).json({
-          fulfillmentText: "📋 *Menu Principal*\n1️⃣ Novo Cliente\n2️⃣ Pagamento\n3️⃣ Suporte\n4️⃣ Catálogo"
-        });
-      }
-
-      // Busca no TMDB
-      const tmdbData = await getTMDBDetails(userMessage);
-      if (tmdbData) {
-        const reply = `🎬 *${tmdbData.title}*\n` +
-                      `📅 Lançamento: ${tmdbData.release_date || "N/A"}\n` +
-                      `📝 Sinopse: ${tmdbData.overview || "Sem sinopse disponível"}\n` +
-                      `${tmdbData.media_type === "tv" ? `📺 Temporadas disponíveis: ${tmdbData.seasons}\n` : ""}` +
-                      `${tmdbData.poster_path ? `🖼️ Poster: ${tmdbData.poster_path}` : ""}`;
-        await delay(4000);
-        return res.status(200).json({ fulfillmentText: reply });
-      } else {
-        await delay(4000);
-        return res.status(200).json({ fulfillmentText: "Não encontrei esse título no catálogo. 😕" });
-      }
-    }
-
-    // Mensagens para menu 1,2,3
-    if (userMessage.match(/^[1-3]$/)) {
-      const reply = await processMenuOption(userId, userMessage, userMessage);
-      return res.status(200).json({ fulfillmentText: reply });
-    }
-
-    // Mensagem de boas-vindas ou qualquer outro texto
-    await delay(4000);
-    return res.status(200).json({
-      fulfillmentText: "📋 *Menu Principal*\n1️⃣ Novo Cliente\n2️⃣ Pagamento\n3️⃣ Suporte\n4️⃣ Catálogo"
-    });
-
-  } catch (err) {
-    console.error("Erro no webhook:", err);
-    return res.status(500).json({ fulfillmentText: "Desculpe, não consegui responder agora." });
+  if (!clientes[clienteId]) {
+    clientes[clienteId] = { menu: "inicio" };
   }
+
+  await atendimentoDani(clienteId, mensagem, clientes[clienteId]);
+  res.sendStatus(200);
 });
 
-app.listen(PORT, () => {
-  console.log(`Webhook rodando na porta ${PORT}`);
-});
+app.listen(PORT, () => console.log(`Servidor rodando na porta ${PORT}`));
