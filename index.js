@@ -20,6 +20,8 @@ async function enviarMensagem(clienteId, mensagem) {
 
 // Função principal de atendimento
 async function atendimentoDani(clienteId, input, estado) {
+  input = input.trim();
+
   switch (estado.menu) {
     case "inicio":
       await enviarMensagem(clienteId, "Olá! Aqui é a Dani do Atendimento Magtv! 👋");
@@ -28,7 +30,7 @@ async function atendimentoDani(clienteId, input, estado) {
       break;
 
     case "aguardando_nome":
-      estado.nome = input;
+      estado.nome = input || "Cliente";
       await enviarMensagem(clienteId, `Prazer ${estado.nome}! 👋`);
       await enviarMensagem(clienteId, "📋 *Menu Principal*:\n1️⃣ Novo Cliente\n2️⃣ Pagamento\n3️⃣ Suporte\n4️⃣ Catálogo");
       estado.menu = "menu";
@@ -43,9 +45,13 @@ async function atendimentoDani(clienteId, input, estado) {
         await enviarMensagem(clienteId, "Nosso serviço funciona em Smart TVs Samsung, LG, Roku e dispositivos Android via nosso app exclusivo.");
         await enviarMensagem(clienteId, "Gostaria de fazer o teste gratuito de 3 horas?");
         estado.menu = "teste_gratuito";
+      } else if (input === "2") {
+        await enviarMensagem(clienteId, "💳 Para pagamento via PIX:\nChave: 94 98444-5961\nNome: Davi Eduardo Borges\nValor: R$ 30,00\nEnvie o comprovante após o pagamento.");
+      } else if (input === "3") {
+        await enviarMensagem(clienteId, "🛟 Aguarde um momento, vou encaminhar seu atendimento para o suporte.");
       } else if (input === "4") {
         estado.menu = "catalogo";
-        await enviarMensagem(clienteId, "Digite o nome do filme ou série que deseja pesquisar:");
+        await enviarMensagem(clienteId, "🎞️ Ótimo! Digite o nome do filme ou série que deseja pesquisar:");
       } else {
         await enviarMensagem(clienteId, "Opção inválida. Por favor, escolha de 1 a 4.");
       }
@@ -62,18 +68,26 @@ async function atendimentoDani(clienteId, input, estado) {
       break;
 
     case "catalogo":
-      const resultado = await buscarFilmeOuSerie(input);
-      if (!resultado) {
-        await enviarMensagem(clienteId, "Não encontrei esse título 😕. Tente outro.");
+      if (input.match(/^[1-4]$/)) {
+        // volta ao menu principal
+        estado.menu = "menu";
+        await enviarMensagem(clienteId, "📋 *Menu Principal*:\n1️⃣ Novo Cliente\n2️⃣ Pagamento\n3️⃣ Suporte\n4️⃣ Catálogo");
       } else {
-        let msg = `🎬 Título: ${resultado.title}\n📝 Sinopse: ${resultado.overview}\n📅 Lançamento: ${resultado.release_date}`;
-        if (resultado.media_type === "tv") {
-          msg += `\n📺 Temporadas disponíveis: ${resultado.seasons || "—"}`;
+        const resultado = await buscarFilmeOuSerie(input);
+        if (!resultado) {
+          await enviarMensagem(clienteId, "Não encontrei esse título 😕. Tente outro.");
+        } else {
+          let msg = `🎬 Título: ${resultado.title}\n📝 Sinopse: ${resultado.overview}\n📅 Lançamento: ${resultado.release_date}`;
+          if (resultado.media_type === "tv") {
+            msg += `\n📺 Temporadas disponíveis: ${resultado.seasons || "—"}`;
+          }
+          if (resultado.poster_path) {
+            msg += `\n🖼️ Poster: ${resultado.poster_path}`;
+          }
+          await enviarMensagem(clienteId, msg);
         }
-        await enviarMensagem(clienteId, msg);
+        await enviarMensagem(clienteId, "Deseja pesquisar outro título ou voltar ao menu principal?");
       }
-      await enviarMensagem(clienteId, "Deseja pesquisar outro título ou voltar ao menu principal?");
-      estado.menu = "menu";
       break;
 
     default:
