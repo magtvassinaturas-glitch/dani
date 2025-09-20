@@ -1,21 +1,14 @@
 {
-  "name": "dani-bot",
+  "name": "magtv-bot",
   "version": "1.0.0",
-  "description": "Atendimento Magtv IPTV com Dani, Gemini (op1) e TMDB (op4)",
+  "description": "Bot para atendimento da MAGTV com IA do Gemini.",
   "main": "index.js",
-  "type": "module",
   "scripts": {
-    "start": "node index.js",
-    "postinstall": "echo \"install ok\""
-  },
-  "engines": {
-    "node": ">=18"
+    "start": "node index.js"
   },
   "dependencies": {
-    "express": "^4.18.2",
-    "body-parser": "^1.20.2",
-    "dotenv": "^16.3.1"
-  },
-  "author": "Seu Nome",
-  "license": "MIT"
+    "axios": "^1.6.8",
+    "express": "^4.19.2",
+    "dotenv": "^16.4.5"
+  }
 }
