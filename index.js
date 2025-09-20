@@ -1,116 +1,130 @@
-import express from "express";
-import bodyParser from "body-parser";
-import { buscarFilmeOuSerie } from "./tmdb.js";
+const express = require('express');
+const axios = require('axios');
+const path = require('path');
+require('dotenv').config();
 
 const app = express();
-const PORT = process.env.PORT || 10000;
+app.use(express.json());
 
-app.use(bodyParser.json());
+// CONFIGURAÇÕES
+const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
+const GEMINI_API_ENDPOINT = `https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${GEMINI_API_KEY}`;
+const PIX_KEY = "94 98444-5961";
+const PIX_NAME = "Davi Eduardo Borges";
+const PLAN_VALUE = "R$ 30,00";
 
-console.log("Webhook rodando na porta", PORT);
+// Rota para o webhook do Dialogflow
+app.post('/webhook', async (req, res) => {
+  try {
+    const reqBody = req.body;
+    const userQuery = reqBody.queryResult.queryText.toLowerCase().trim();
+    let fulfillmentText = "";
 
-// Função para simular delay humanizado
-const delay = (ms) => new Promise((res) => setTimeout(res, ms));
+    // Lógica para as opções de menu (1, 2, 3)
+    if (userQuery.includes("1") || userQuery.includes("novo cliente") || userQuery.includes("plano") || userQuery.includes("assinatura")) {
+      fulfillmentText = `Olá, sou a Dani da MAGTV, sua assistente virtual. 😊
+      
+Nosso plano de assinatura é único e custa apenas ${PLAN_VALUE} por mês.
+Ele inclui mais de 2.000 canais abertos e fechados, 20 mil filmes, 14 mil séries e novelas, animes e desenhos.
+Nosso serviço funciona em Smart TVs Samsung, LG e Roku (via IPTV) e em dispositivos Android (celulares, TV Box, Android TV) através do nosso app exclusivo.
+⚠️ Importante: não funciona em iOS (iPhone/iPad).
+      
+Para eu te ajudar com o tutorial de instalação, por favor, me diga: você vai usar em uma **SMART TV**, **ANDROID TV** ou em um **Celular**? E qual a marca do seu aparelho?
+      
+Você tem direito a um teste grátis de 3 horas. Vou te encaminhar para o suporte para criarmos o seu acesso.`;
 
-// Função para enviar mensagens (simulada, adapte para seu webhook real)
-async function enviarMensagem(clienteId, mensagem) {
-  console.log(`[Mensagem para ${clienteId}]:`, mensagem);
-  await delay(4000); // 4s de delay
-}
+    } else if (userQuery.includes("2") || userQuery.includes("pagamento") || userQuery.includes("renovar")) {
+      fulfillmentText = `Para renovar seu plano, por favor, faça o pagamento via PIX:
+👉 Chave PIX: ${PIX_KEY}
+👉 Nome: ${PIX_NAME}
+👉 Valor: ${PLAN_VALUE}
+      
+Após o pagamento, por favor, envie o comprovante para que eu possa confirmar e liberar seu acesso!`;
 
-// Função principal de atendimento
-async function atendimentoDani(clienteId, input, estado) {
-  input = input.trim();
+    } else if (userQuery.includes("3") || userQuery.includes("suporte") || userQuery.includes("problema")) {
+      fulfillmentText = "Certo, vou te conectar com o nosso suporte.\n\nPor favor, me diga seu nome completo.";
 
-  switch (estado.menu) {
-    case "inicio":
-      await enviarMensagem(clienteId, "Olá! Aqui é a Dani do Atendimento Magtv! 👋");
-      await enviarMensagem(clienteId, "Como se chama?");
-      estado.menu = "aguardando_nome";
-      break;
+    } else if (userQuery.includes("iphone") || userQuery.includes("ios") || userQuery.includes("ipad")) {
+      fulfillmentText = "Lamento, mas o nosso serviço não é compatível com dispositivos iOS (iPhone e iPad).";
 
-    case "aguardando_nome":
-      estado.nome = input || "Cliente";
-      await enviarMensagem(clienteId, `Prazer ${estado.nome}! 👋`);
-      await enviarMensagem(clienteId, "📋 *Menu Principal*:\n1️⃣ Novo Cliente\n2️⃣ Pagamento\n3️⃣ Suporte\n4️⃣ Catálogo");
-      estado.menu = "menu";
-      break;
+    } else if (userQuery.includes("smart tv") || userQuery.includes("lg") || userQuery.includes("samsung") || userQuery.includes("tcl") || userQuery.includes("philco") || userQuery.includes("semp")) {
+      fulfillmentText = "Para eu te ajudar com o tutorial, preciso saber qual o sistema da sua TV.\n\n";
+      fulfillmentText += "A tela inicial tem a loja de apps da Google (o símbolo de um triângulo colorido do Play Store) ou o menu tem a opção 'Canais de Streaming' (com a logo do Roku)?\n\n";
+      fulfillmentText += "Essa informação vai me ajudar a te guiar para o tutorial correto.";
 
-    case "menu":
-      if (input === "1") {
-        estado.menu = "novo_cliente";
-        await enviarMensagem(clienteId, "Ótimo! Vou te explicar nosso plano de assinatura.");
-        await enviarMensagem(clienteId, "👉 Mensal: R$30,00");
-        await enviarMensagem(clienteId, "Inclui mais de 2.000 canais, 20.000 filmes, 14.000 séries, animes e desenhos.");
-        await enviarMensagem(clienteId, "Nosso serviço funciona em Smart TVs Samsung, LG, Roku e dispositivos Android via nosso app exclusivo.");
-        await enviarMensagem(clienteId, "Gostaria de fazer o teste gratuito de 3 horas?");
-        estado.menu = "teste_gratuito";
-      } else if (input === "2") {
-        await enviarMensagem(clienteId, "💳 Para pagamento via PIX:\nChave: 94 98444-5961\nNome: Davi Eduardo Borges\nValor: R$ 30,00\nEnvie o comprovante após o pagamento.");
-      } else if (input === "3") {
-        await enviarMensagem(clienteId, "🛟 Aguarde um momento, vou encaminhar seu atendimento para o suporte.");
-      } else if (input === "4") {
-        estado.menu = "catalogo";
-        await enviarMensagem(clienteId, "🎞️ Ótimo! Digite o nome do filme ou série que deseja pesquisar:");
-      } else {
-        await enviarMensagem(clienteId, "Opção inválida. Por favor, escolha de 1 a 4.");
+    } else if (userQuery.includes("roku")) {
+      fulfillmentText = "Certo! Para instalar o XCloud TV na sua Roku TV, siga estes passos:\n\n";
+      fulfillmentText += "* Aperte o botão Home no controle remoto para ir para a tela principal.\n";
+      fulfillmentText += "* Vá até 'Canais de Streaming'.\n";
+      fulfillmentText += "* Selecione 'Procurar Canais'.\n";
+      fulfillmentText += "* No campo de busca, digite 'XCloud TV'.\n";
+      fulfillmentText += "* Selecione o app e clique em 'Adicionar Canal'.\n";
+      fulfillmentText += "* Depois de instalar, clique em 'Ir para o canal'.\n";
+      fulfillmentText += "* Agora, é só inserir seu login e senha que vamos fornecer!\n\n";
+      fulfillmentText += "Aguarde um momento, vou te encaminhar para o suporte para criarmos seu acesso.";
+
+    } else if (userQuery.includes("android tv") || userQuery.includes("sony") || userQuery.includes("multilaser") || userQuery.includes("philips")) {
+      fulfillmentText = "Ótimo! Para instalar o aplicativo Rush One na sua Android TV, siga os passos:\n\n";
+      fulfillmentText += "* Na sua Android TV, acesse a Play Store.\n";
+      fulfillmentText += "* Procure pelo aplicativo 'Downloader' e clique em Instalar.\n";
+      fulfillmentText += "* Abra o aplicativo Downloader.\n";
+      fulfillmentText += "* No campo para digitar, coloque o código: 904291 e clique em 'Go'.\n";
+      fulfillmentText += "* Dê permissão para o Downloader instalar outros apps.\n";
+      fulfillmentText += "* Aguarde a instalação ser concluída.\n\n";
+      fulfillmentText += "Aguarde um momento, vou te encaminhar para o suporte para criarmos seu acesso.";
+
+    } else if (userQuery.includes("celular")) {
+      fulfillmentText = "Perfeito! Para instalar o aplicativo Rush Original no seu celular Android, siga os passos:\n\n";
+      fulfillmentText += "* Abra o navegador Google Chrome.\n";
+      fulfillmentText += "* Digite o site: https://rush.ninja/\n";
+      fulfillmentText += "* Encontre o app 'P2P Rush Original' e clique em 'Baixar'.\n";
+      fulfillmentText += "* Quando o download terminar, clique no arquivo baixado para instalar. Aceite a permissão para instalar de fontes desconhecidas se necessário.\n\n";
+      fulfillmentText += "Aguarde um momento, vou te encaminhar para o suporte para criarmos seu acesso.";
+      
+    } else {
+      // Usa a API do Gemini para respostas gerais
+      const payload = {
+        "contents": [{
+          "parts": [{
+            "text": userQuery
+          }]
+        }]
+      };
+
+      const options = {
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      };
+
+      try {
+        const geminiResponse = await axios.post(GEMINI_API_ENDPOINT, payload, options);
+        fulfillmentText = geminiResponse.data.candidates[0].content.parts[0].text;
+      } catch (geminiError) {
+        fulfillmentText = "Desculpe, não consegui gerar uma resposta para isso no momento. Vou te encaminhar para o suporte humano.";
       }
-      break;
+    }
 
-    case "teste_gratuito":
-      if (input.toLowerCase() === "sim") {
-        await enviarMensagem(clienteId, "Ótimo! Vamos começar o tutorial de instalação.");
-        estado.menu = "tutorial_inicial";
-      } else {
-        await enviarMensagem(clienteId, "Sem problemas! Obrigado pelo seu interesse. 😊");
-        estado.menu = "menu";
-      }
-      break;
+    const dialogflowResponse = {
+      "fulfillmentText": fulfillmentText
+    };
 
-    case "catalogo":
-      if (input.match(/^[1-4]$/)) {
-        // volta ao menu principal
-        estado.menu = "menu";
-        await enviarMensagem(clienteId, "📋 *Menu Principal*:\n1️⃣ Novo Cliente\n2️⃣ Pagamento\n3️⃣ Suporte\n4️⃣ Catálogo");
-      } else {
-        const resultado = await buscarFilmeOuSerie(input);
-        if (!resultado) {
-          await enviarMensagem(clienteId, "Não encontrei esse título 😕. Tente outro.");
-        } else {
-          let msg = `🎬 Título: ${resultado.title}\n📝 Sinopse: ${resultado.overview}\n📅 Lançamento: ${resultado.release_date}`;
-          if (resultado.media_type === "tv") {
-            msg += `\n📺 Temporadas disponíveis: ${resultado.seasons || "—"}`;
-          }
-          if (resultado.poster_path) {
-            msg += `\n🖼️ Poster: ${resultado.poster_path}`;
-          }
-          await enviarMensagem(clienteId, msg);
-        }
-        await enviarMensagem(clienteId, "Deseja pesquisar outro título ou voltar ao menu principal?");
-      }
-      break;
+    res.json(dialogflowResponse);
 
-    default:
-      await enviarMensagem(clienteId, "Desculpe, não consegui entender. Voltando ao menu principal.");
-      estado.menu = "menu";
-      break;
+  } catch (error) {
+    console.error("Erro na requisição: ", error);
+    res.status(500).json({
+      "fulfillmentText": `Ocorreu um erro na integração. Por favor, tente novamente ou entre em contato com o suporte.`
+    });
   }
-}
-
-// Simulação de estado do cliente
-const clientes = {};
-
-// Endpoint webhook
-app.post("/", async (req, res) => {
-  const clienteId = req.body.clienteId || "teste";
-  const mensagem = req.body.mensagem || "";
-
-  if (!clientes[clienteId]) {
-    clientes[clienteId] = { menu: "inicio" };
-  }
-
-  await atendimentoDani(clienteId, mensagem, clientes[clienteId]);
-  res.sendStatus(200);
 });
 
-app.listen(PORT, () => console.log(`Servidor rodando na porta ${PORT}`));
+// Rota de teste
+app.get('/', (req, res) => {
+    res.send('O bot está online e funcionando!');
+});
+
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => {
+  console.log(`Servidor rodando na porta ${PORT}`);
+});
