@@ -8,7 +8,7 @@ app.use(express.json());
 
 // CONFIGURAÇÕES
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
-const GEMINI_API_ENDPOINT = `https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${GEMINI_API_KEY}`;
+const GEMINI_API_ENDPOINT = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.0-pro:generateContent?key=${GEMINI_API_KEY}`;
 const PIX_KEY = "94 98444-5961";
 const PIX_NAME = "Davi Eduardo Borges";
 const PLAN_VALUE = "R$ 30,00";
