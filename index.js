@@ -7,7 +7,7 @@ const app = express();
 app.use(express.json());
 
 // CONFIGURAÇÕES
-const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
+const OPENAI_API_KEY = "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";
 const OPENAI_API_ENDPOINT = 'https://api.openai.com/v1/chat/completions';
 const PIX_KEY = "94 98444-5961";
 const PIX_NAME = "Davi Eduardo Borges";
