@@ -101,8 +101,14 @@ Após o pagamento, por favor, envie o comprovante para que eu possa confirmar e 
         const geminiResponse = await axios.post(GEMINI_API_ENDPOINT, payload, options);
         fulfillmentText = geminiResponse.data.candidates[0].content.parts[0].text;
       } catch (geminiError) {
-        console.error("Erro ao chamar a API do Gemini:", geminiError.response ? geminiError.response.data : geminiError.message);
-        fulfillmentText = "Desculpe, não consegui gerar uma resposta para isso no momento. Vou te encaminhar para o suporte humano.";
+        // Altera a mensagem de erro para que ela retorne o erro completo da API
+        let errorMsg = "Erro na chamada à API do Gemini.";
+        if (geminiError.response && geminiError.response.data && geminiError.response.data.error) {
+          errorMsg = `Erro da API do Gemini: ${geminiError.response.data.error.message}`;
+        } else if (geminiError.message) {
+          errorMsg = `Erro de Conexão: ${geminiError.message}`;
+        }
+        fulfillmentText = `Desculpe, não consegui gerar uma resposta. Detalhe do erro: ${errorMsg}`;
       }
     }
 
