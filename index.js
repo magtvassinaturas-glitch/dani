@@ -7,8 +7,8 @@ const app = express();
 app.use(express.json());
 
 // CONFIGURAÇÕES
-const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
-const GEMINI_API_ENDPOINT = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.0-pro:generateContent?key=${GEMINI_API_KEY}`;
+const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
+const OPENAI_API_ENDPOINT = 'https://api.openai.com/v1/chat/completions';
 const PIX_KEY = "94 98444-5961";
 const PIX_NAME = "Davi Eduardo Borges";
 const PLAN_VALUE = "R$ 30,00";
@@ -82,33 +82,28 @@ Após o pagamento, por favor, envie o comprovante para que eu possa confirmar e 
       fulfillmentText += "Aguarde um momento, vou te encaminhar para o suporte para criarmos seu acesso.";
       
     } else {
-      // Usa a API do Gemini para respostas gerais
+      // Usa a API da OpenAI para respostas gerais
       const payload = {
-        "contents": [{
-          "parts": [{
-            "text": userQuery
-          }]
+        model: "gpt-3.5-turbo",
+        messages: [{
+          role: "user",
+          content: userQuery
         }]
       };
 
       const options = {
         headers: {
           'Content-Type': 'application/json',
+          'Authorization': `Bearer ${OPENAI_API_KEY}`
         },
       };
 
       try {
-        const geminiResponse = await axios.post(GEMINI_API_ENDPOINT, payload, options);
-        fulfillmentText = geminiResponse.data.candidates[0].content.parts[0].text;
-      } catch (geminiError) {
-        // Altera a mensagem de erro para que ela retorne o erro completo da API
-        let errorMsg = "Erro na chamada à API do Gemini.";
-        if (geminiError.response && geminiError.response.data && geminiError.response.data.error) {
-          errorMsg = `Erro da API do Gemini: ${geminiError.response.data.error.message}`;
-        } else if (geminiError.message) {
-          errorMsg = `Erro de Conexão: ${geminiError.message}`;
-        }
-        fulfillmentText = `Desculpe, não consegui gerar uma resposta. Detalhe do erro: ${errorMsg}`;
+        const openaiResponse = await axios.post(OPENAI_API_ENDPOINT, payload, options);
+        fulfillmentText = openaiResponse.data.choices[0].message.content;
+      } catch (error) {
+        console.error("Erro na chamada à API da OpenAI:", error.response ? error.response.data : error.message);
+        fulfillmentText = `Desculpe, não consegui gerar uma resposta. Detalhe do erro: ${error.message}`;
       }
     }
 
