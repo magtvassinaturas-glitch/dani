@@ -101,24 +101,9 @@ Após o pagamento, por favor, envie o comprovante para que eu possa confirmar e 
         const geminiResponse = await axios.post(GEMINI_API_ENDPOINT, payload, options);
         fulfillmentText = geminiResponse.data.candidates[0].content.parts[0].text;
       } catch (geminiError) {
+        console.error("Erro ao chamar a API do Gemini:", geminiError.response ? geminiError.response.data : geminiError.message);
         fulfillmentText = "Desculpe, não consegui gerar uma resposta para isso no momento. Vou te encaminhar para o suporte humano.";
       }
-    }
-
-    const dialogflowResponse = {
-      "fulfillmentText": fulfillmentText
-    };
-
-    res.json(dialogflowResponse);
-
-  } catch (error) {
-    console.error("Erro na requisição: ", error);
-    res.status(500).json({
-      "fulfillmentText": `Ocorreu um erro na integração. Por favor, tente novamente ou entre em contato com o suporte.`
-    });
-  }
-});
-
 // Rota de teste
 app.get('/', (req, res) => {
     res.send('O bot está online e funcionando!');
