@@ -1,110 +1,150 @@
 const express = require('express');
-const axios = require('axios');
-const path = require('path');
-require('dotenv').config();
-
 const app = express();
 app.use(express.json());
 
-// CONFIGURAÇÕES
-const OPENAI_API_KEY = "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";
-const OPENAI_API_ENDPOINT = 'https://api.openai.com/v1/chat/completions';
+// CONFIGURAÇÕES DO BOT
 const PIX_KEY = "94 98444-5961";
 const PIX_NAME = "Davi Eduardo Borges";
 const PLAN_VALUE = "R$ 30,00";
+const TELEPHONE = "94 98444-5961";
+const SITE_RUSH = "https://rush.ninja/";
+const CODE_DOWNLOADER = "904291";
 
 // Rota para o webhook do Dialogflow
-app.post('/webhook', async (req, res) => {
+app.post('/webhook', (req, res) => {
   try {
     const reqBody = req.body;
     const userQuery = reqBody.queryResult.queryText.toLowerCase().trim();
     let fulfillmentText = "";
 
-    // Lógica para as opções de menu (1, 2, 3)
-    if (userQuery.includes("1") || userQuery.includes("novo cliente") || userQuery.includes("plano") || userQuery.includes("assinatura")) {
-      fulfillmentText = `Olá, sou a Dani da MAGTV, sua assistente virtual. 😊
-      
-Nosso plano de assinatura é único e custa apenas ${PLAN_VALUE} por mês.
-Ele inclui mais de 2.000 canais abertos e fechados, 20 mil filmes, 14 mil séries e novelas, animes e desenhos.
-Nosso serviço funciona em Smart TVs Samsung, LG e Roku (via IPTV) e em dispositivos Android (celulares, TV Box, Android TV) através do nosso app exclusivo.
-⚠️ Importante: não funciona em iOS (iPhone/iPad).
-      
-Para eu te ajudar com o tutorial de instalação, por favor, me diga: você vai usar em uma **SMART TV**, **ANDROID TV** ou em um **Celular**? E qual a marca do seu aparelho?
-      
+    // Lógica principal do bot (primeiro nível de intenções)
+    if (userQuery.includes("oi") || userQuery.includes("olá") || userQuery.includes("ola") || userQuery.includes("magtv")) {
+      fulfillmentText = `Olá! Seja bem-vindo(a) à MAGTV! Meu nome é Dani.
+
+Como posso te ajudar hoje?
+1️⃣ Novo Cliente
+2️⃣ Pagamento
+3️⃣ Suporte`;
+
+    } else if (userQuery.includes("1") || userQuery.includes("novo cliente") || userQuery.includes("plano") || userQuery.includes("assinatura")) {
+      fulfillmentText = `Ótimo!
+
+Então, nosso plano de assinatura é o **Mensal**, e custa apenas **R$ 30,00**.
+
+Ele inclui:
+- Mais de **2.000** canais abertos e fechados
+- Mais de **20 mil** filmes
+- Mais de **14 mil** séries e novelas
+- Animes e desenhos
+
+Você pode usar em **Smart TVs Samsung, LG, Roku** (via IPTV) e em dispositivos **Android** (celulares, TV Box, Android TV) através do nosso app exclusivo.
+⚠️ Importante: **não funciona em iOS** (iPhone/iPad).
+
+Me diz uma coisa, você vai usar em qual dispositivo? **Smart TV**, **Android TV** ou **Celular**? E qual a marca dele?
+
 Você tem direito a um teste grátis de 3 horas. Vou te encaminhar para o suporte para criarmos o seu acesso.`;
 
     } else if (userQuery.includes("2") || userQuery.includes("pagamento") || userQuery.includes("renovar")) {
-      fulfillmentText = `Para renovar seu plano, por favor, faça o pagamento via PIX:
-👉 Chave PIX: ${PIX_KEY}
-👉 Nome: ${PIX_NAME}
-👉 Valor: ${PLAN_VALUE}
-      
-Após o pagamento, por favor, envie o comprovante para que eu possa confirmar e liberar seu acesso!`;
+      fulfillmentText = `Para realizar o pagamento ou renovar, é só usar a chave PIX abaixo:
+
+Chave PIX: ${PIX_KEY}
+Nome: ${PIX_NAME}
+Valor: R$ ${PLAN_VALUE}
+
+Assim que você fizer o pagamento, me envie o comprovante, por favor! 😉`;
 
     } else if (userQuery.includes("3") || userQuery.includes("suporte") || userQuery.includes("problema")) {
       fulfillmentText = "Certo, vou te conectar com o nosso suporte.\n\nPor favor, me diga seu nome completo.";
 
     } else if (userQuery.includes("iphone") || userQuery.includes("ios") || userQuery.includes("ipad")) {
-      fulfillmentText = "Lamento, mas o nosso serviço não é compatível com dispositivos iOS (iPhone e iPad).";
+      fulfillmentText = `Lamento, mas o nosso serviço não é compatível com dispositivos iOS (iPhone e iPad).`;
 
-    } else if (userQuery.includes("smart tv") || userQuery.includes("lg") || userQuery.includes("samsung") || userQuery.includes("tcl") || userQuery.includes("philco") || userQuery.includes("semp")) {
-      fulfillmentText = "Para eu te ajudar com o tutorial, preciso saber qual o sistema da sua TV.\n\n";
-      fulfillmentText += "A tela inicial tem a loja de apps da Google (o símbolo de um triângulo colorido do Play Store) ou o menu tem a opção 'Canais de Streaming' (com a logo do Roku)?\n\n";
-      fulfillmentText += "Essa informação vai me ajudar a te guiar para o tutorial correto.";
+    } else if (userQuery.includes("samsung") || userQuery.includes("lg")) {
+      fulfillmentText = `Ótimo! Já sei o que fazer.
+
+Você tem direito a um teste grátis de 3 horas. Aguarde um momento para eu criar seu acesso!
+
+---
+📺 **Tutorial para TVs Samsung e LG**
+
+* Aperte o botão **Home** no controle remoto.
+* Navegue até a **loja de aplicativos**.
+* Use a pesquisa e digite **"XCloud TV"**.
+* Selecione o aplicativo e clique em **Instalar** (ou Baixar).
+* Quando a instalação estiver concluída, clique em **Abrir**.
+
+Pronto! É só inserir seu login e senha que vamos fornecer!
+Se não conseguir, me avise que vou te encaminhar para o suporte.`;
 
     } else if (userQuery.includes("roku")) {
-      fulfillmentText = "Certo! Para instalar o XCloud TV na sua Roku TV, siga estes passos:\n\n";
-      fulfillmentText += "* Aperte o botão Home no controle remoto para ir para a tela principal.\n";
-      fulfillmentText += "* Vá até 'Canais de Streaming'.\n";
-      fulfillmentText += "* Selecione 'Procurar Canais'.\n";
-      fulfillmentText += "* No campo de busca, digite 'XCloud TV'.\n";
-      fulfillmentText += "* Selecione o app e clique em 'Adicionar Canal'.\n";
-      fulfillmentText += "* Depois de instalar, clique em 'Ir para o canal'.\n";
-      fulfillmentText += "* Agora, é só inserir seu login e senha que vamos fornecer!\n\n";
-      fulfillmentText += "Aguarde um momento, vou te encaminhar para o suporte para criarmos seu acesso.";
+      fulfillmentText = `Ah, entendi! Então sua TV usa o sistema **Roku TV**.
+
+Ótimo! Agora vou te passar o passo a passo para instalar o nosso app.
+
+---
+📺 **Tutorial para Roku TV**
+
+* Aperte o botão **Home** no controle remoto.
+* Vá até **Canais de Streaming** na tela principal.
+* Selecione a opção **Procurar Canais**.
+* No campo de busca, digite **"XCloud TV"**.
+* Selecione o aplicativo e clique em **Adicionar Canal**.
+* Aguarde a instalação e clique em **Ir para o canal**.
+
+Você tem direito a um teste grátis de 3 horas. Aguarde um momento para criar seu acesso!
+Se não conseguir, me avise que vou te encaminhar para o suporte.`;
 
     } else if (userQuery.includes("android tv") || userQuery.includes("sony") || userQuery.includes("multilaser") || userQuery.includes("philips")) {
-      fulfillmentText = "Ótimo! Para instalar o aplicativo Rush One na sua Android TV, siga os passos:\n\n";
-      fulfillmentText += "* Na sua Android TV, acesse a Play Store.\n";
-      fulfillmentText += "* Procure pelo aplicativo 'Downloader' e clique em Instalar.\n";
-      fulfillmentText += "* Abra o aplicativo Downloader.\n";
-      fulfillmentText += "* No campo para digitar, coloque o código: 904291 e clique em 'Go'.\n";
-      fulfillmentText += "* Dê permissão para o Downloader instalar outros apps.\n";
-      fulfillmentText += "* Aguarde a instalação ser concluída.\n\n";
-      fulfillmentText += "Aguarde um momento, vou te encaminhar para o suporte para criarmos seu acesso.";
+      fulfillmentText = `Ótimo! Sua TV usa o sistema **Android TV**, então você vai conseguir usar nosso serviço tranquilamente.
 
-    } else if (userQuery.includes("celular")) {
-      fulfillmentText = "Perfeito! Para instalar o aplicativo Rush Original no seu celular Android, siga os passos:\n\n";
-      fulfillmentText += "* Abra o navegador Google Chrome.\n";
-      fulfillmentText += "* Digite o site: https://rush.ninja/\n";
-      fulfillmentText += "* Encontre o app 'P2P Rush Original' e clique em 'Baixar'.\n";
-      fulfillmentText += "* Quando o download terminar, clique no arquivo baixado para instalar. Aceite a permissão para instalar de fontes desconhecidas se necessário.\n\n";
-      fulfillmentText += "Aguarde um momento, vou te encaminhar para o suporte para criarmos seu acesso.";
-      
+Você tem direito a um teste grátis de 3 horas. Vou te enviar agora o tutorial para a instalação do nosso aplicativo.
+
+---
+📺 **Tutorial para Android TV**
+
+* Na sua Android TV, acesse a **Play Store**.
+* Procure pelo aplicativo **"Downloader"** e clique em Instalar.
+* Abra o aplicativo Downloader.
+* No campo para digitar, coloque o código: **${CODE_DOWNLOADER}** e clique em Go.
+* Se o aplicativo pedir, dê a permissão para o Downloader poder instalar outros aplicativos.
+* Aguarde a instalação ser concluída.
+
+Pronto! É só me avisar quando o app estiver instalado que eu te passo seu acesso para o teste grátis.
+Se não conseguir, me avise que vou te encaminhar para o suporte.`;
+
+    } else if (userQuery.includes("celular") || userQuery.includes("smartphone")) {
+      fulfillmentText = `Perfeito!
+
+Você tem direito a um teste grátis de 3 horas. Vou te enviar agora o tutorial para a instalação do nosso aplicativo no seu celular.
+
+---
+📱 **Tutorial para Celular Android**
+
+* Abra o navegador Google Chrome no seu celular.
+* Na barra de endereço, digite o seguinte site: **${SITE_RUSH}**
+* Na página que abrir, procure o app **"P2P Rush Original"**.
+* Clique no botão **Baixar** e aguarde o download.
+* Quando o download terminar, clique no arquivo baixado para instalar o aplicativo.
+* Se for a primeira vez, pode ser que o celular peça permissão para instalar de fontes desconhecidas; basta aceitar.
+
+Pronto! É só me avisar quando o app estiver instalado que eu te passo seu acesso para o teste grátis.
+Se não conseguir, me avise que vou te encaminhar para o suporte.`;
+
+    } else if (userQuery.includes("philco") || userQuery.includes("tcl") || userQuery.includes("semp") || userQuery.includes("aoc")) {
+      fulfillmentText = `Uma **TV ${userQuery}**, legal!
+
+Para eu te ajudar com o tutorial, preciso saber qual o sistema da sua TV.
+
+A tela inicial dela tem a loja de apps da Google (o símbolo de um triângulo colorido do **Play Store**) ou o menu tem a opção **"Canais de Streaming"** (com a logo do **Roku**)?`;
+    
+    } else if (userQuery.includes("diana silva") || userQuery.includes("diana") || userQuery.includes("silva")) {
+        fulfillmentText = `Certo, Diana.
+
+Aguarde um momento, vou encaminhar seu atendimento para o suporte.`;
+
     } else {
-      // Usa a API da OpenAI para respostas gerais
-      const payload = {
-        model: "gpt-3.5-turbo",
-        messages: [{
-          role: "user",
-          content: userQuery
-        }]
-      };
-
-      const options = {
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${OPENAI_API_KEY}`
-        },
-      };
-
-      try {
-        const openaiResponse = await axios.post(OPENAI_API_ENDPOINT, payload, options);
-        fulfillmentText = openaiResponse.data.choices[0].message.content;
-      } catch (error) {
-        console.error("Erro na chamada à API da OpenAI:", error.response ? error.response.data : error.message);
-        fulfillmentText = `Desculpe, não consegui gerar uma resposta. Detalhe do erro: ${error.message}`;
-      }
+      // Mensagem genérica para quando não há regra programada
+      fulfillmentText = `Desculpe, não entendi sua pergunta. Por favor, escolha uma das opções do menu principal (1️⃣ Novo Cliente, 2️⃣ Pagamento ou 3️⃣ Suporte) ou entre em contato com o suporte em nosso número de WhatsApp.`;
     }
 
     const dialogflowResponse = {
@@ -116,7 +156,7 @@ Após o pagamento, por favor, envie o comprovante para que eu possa confirmar e 
   } catch (error) {
     console.error("Erro na requisição: ", error);
     res.status(500).json({
-      "fulfillmentText": `Ocorreu um erro na integração. Por favor, tente novamente ou entre em contato com o suporte.`
+      "fulfillmentText": `Ocorreu um erro na integração. Por favor, tente novamente.`
     });
   }
 });
