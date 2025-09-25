@@ -10,6 +10,18 @@ const TELEPHONE = "94 98444-5961";
 const SITE_RUSH = "https://rush.ninja/";
 const CODE_DOWNLOADER = "904291";
 
+// Função para obter a saudação do dia
+function getGreeting() {
+  const hour = new Date().getHours();
+  if (hour >= 6 && hour < 12) {
+    return "Bom dia";
+  } else if (hour >= 12 && hour < 18) {
+    return "Boa tarde";
+  } else {
+    return "Boa noite";
+  }
+}
+
 // Rota para o webhook do Dialogflow
 app.post('/webhook', (req, res) => {
   try {
@@ -19,7 +31,8 @@ app.post('/webhook', (req, res) => {
 
     // Lógica principal do bot (primeiro nível de intenções)
     if (userQuery.includes("oi") || userQuery.includes("olá") || userQuery.includes("ola") || userQuery.includes("magtv")) {
-      fulfillmentText = `Olá! Seja bem-vindo(a) à MAGTV! Meu nome é Dani.
+      const greeting = getGreeting();
+      fulfillmentText = `Olá! ${greeting}, Seja bem-vindo(a) à MAGTV! Meu nome é Dani.
 
 Como posso te ajudar hoje?
 1️⃣ Novo Cliente
@@ -125,7 +138,7 @@ Você tem direito a um teste grátis de 3 horas. Vou te enviar agora o tutorial 
 * Na página que abrir, procure o app **"P2P Rush Original"**.
 * Clique no botão **Baixar** e aguarde o download.
 * Quando o download terminar, clique no arquivo baixado para instalar o aplicativo.
-* Se for a primeira vez, pode ser que o celular peça permissão para instalar de fontes desconhecidas; basta aceitar.
+* Se for a primeira vez, pode ser que o celular peça permissão para instalar de fontes desconhecidas; basta aceita.
 
 Pronto! É só me avisar quando o app estiver instalado que eu te passo seu acesso para o teste grátis.
 Se não conseguir, me avise que vou te encaminhar para o suporte.`;
