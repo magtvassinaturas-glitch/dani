@@ -25,21 +25,11 @@ function getGreeting() {
 // Rota para o webhook do Dialogflow
 app.post('/webhook', (req, res) => {
   try {
-    const reqBody = req.body;
-    const userQuery = reqBody.queryResult.queryText.toLowerCase().trim();
+    const intentName = req.body.queryResult.intent.displayName;
     let fulfillmentText = "";
 
-    // Lógica principal do bot (primeiro nível de intenções)
-    if (userQuery.includes("oi") || userQuery.includes("olá") || userQuery.includes("ola") || userQuery.includes("magtv")) {
-      const greeting = getGreeting();
-      fulfillmentText = `Olá! ${greeting}, Seja bem-vindo(a) à MAGTV! Meu nome é Dani.
-
-Como posso te ajudar hoje?
-1️⃣ Novo Cliente
-2️⃣ Pagamento
-3️⃣ Suporte`;
-
-    } else if (userQuery.includes("1") || userQuery.includes("novo cliente") || userQuery.includes("plano") || userQuery.includes("assinatura")) {
+    // Lógica principal do bot, baseada no nome da intenção
+    if (intentName === "Novo Cliente") {
       fulfillmentText = `Ótimo!
 
 Então, nosso plano de assinatura é o **Mensal**, e custa apenas **R$ 30,00**.
@@ -53,26 +43,12 @@ Ele inclui:
 Você pode usar em **Smart TVs Samsung, LG, Roku** (via IPTV) e em dispositivos **Android** (celulares, TV Box, Android TV) através do nosso app exclusivo.
 ⚠️ Importante: **não funciona em iOS** (iPhone/iPad).
 
-Me diz uma coisa, você vai usar em qual dispositivo? **Smart TV**, **Android TV** ou **Celular**? E qual a marca dele?
+Você tem direito a 3 horas de teste grátis. Vamos começar?`;
+      
+    } else if (intentName === "NovoCliente - Sim") {
+        fulfillmentText = `Antes de começarmos, qual a marca da sua TV?`;
 
-Você tem direito a um teste grátis de 3 horas. Vou te encaminhar para o suporte para criarmos o seu acesso.`;
-
-    } else if (userQuery.includes("2") || userQuery.includes("pagamento") || userQuery.includes("renovar")) {
-      fulfillmentText = `Para realizar o pagamento ou renovar, é só usar a chave PIX abaixo:
-
-Chave PIX: ${PIX_KEY}
-Nome: ${PIX_NAME}
-Valor: R$ ${PLAN_VALUE}
-
-Assim que você fizer o pagamento, me envie o comprovante, por favor! 😉`;
-
-    } else if (userQuery.includes("3") || userQuery.includes("suporte") || userQuery.includes("problema")) {
-      fulfillmentText = "Certo, vou te conectar com o nosso suporte.\n\nPor favor, me diga seu nome completo.";
-
-    } else if (userQuery.includes("iphone") || userQuery.includes("ios") || userQuery.includes("ipad")) {
-      fulfillmentText = `Lamento, mas o nosso serviço não é compatível com dispositivos iOS (iPhone e iPad).`;
-
-    } else if (userQuery.includes("samsung") || userQuery.includes("lg")) {
+    } else if (intentName === "NovoCliente - Sim - SmartTV" || intentName === "NovoCliente - Sim - Samsung" || intentName === "NovoCliente - Sim - LG") {
       fulfillmentText = `Ótimo! Já sei o que fazer.
 
 Você tem direito a um teste grátis de 3 horas. Aguarde um momento para eu criar seu acesso!
@@ -89,7 +65,7 @@ Você tem direito a um teste grátis de 3 horas. Aguarde um momento para eu cria
 Pronto! É só inserir seu login e senha que vamos fornecer!
 Se não conseguir, me avise que vou te encaminhar para o suporte.`;
 
-    } else if (userQuery.includes("roku")) {
+    } else if (intentName === "NovoCliente - Sim - Roku") {
       fulfillmentText = `Ah, entendi! Então sua TV usa o sistema **Roku TV**.
 
 Ótimo! Agora vou te passar o passo a passo para instalar o nosso app.
@@ -107,7 +83,7 @@ Se não conseguir, me avise que vou te encaminhar para o suporte.`;
 Você tem direito a um teste grátis de 3 horas. Aguarde um momento para criar seu acesso!
 Se não conseguir, me avise que vou te encaminhar para o suporte.`;
 
-    } else if (userQuery.includes("android tv") || userQuery.includes("sony") || userQuery.includes("multilaser") || userQuery.includes("philips")) {
+    } else if (intentName === "NovoCliente - Sim - AndroidTV" || intentName === "NovoCliente - Sim - Sony" || intentName === "NovoCliente - Sim - Multilaser" || intentName === "NovoCliente - Sim - Philips") {
       fulfillmentText = `Ótimo! Sua TV usa o sistema **Android TV**, então você vai conseguir usar nosso serviço tranquilamente.
 
 Você tem direito a um teste grátis de 3 horas. Vou te enviar agora o tutorial para a instalação do nosso aplicativo.
@@ -125,7 +101,7 @@ Você tem direito a um teste grátis de 3 horas. Vou te enviar agora o tutorial 
 Pronto! É só me avisar quando o app estiver instalado que eu te passo seu acesso para o teste grátis.
 Se não conseguir, me avise que vou te encaminhar para o suporte.`;
 
-    } else if (userQuery.includes("celular") || userQuery.includes("smartphone")) {
+    } else if (intentName === "NovoCliente - Sim - Celular" || intentName === "NovoCliente - Sim - Smartphone") {
       fulfillmentText = `Perfeito!
 
 Você tem direito a um teste grátis de 3 horas. Vou te enviar agora o tutorial para a instalação do nosso aplicativo no seu celular.
@@ -142,22 +118,42 @@ Você tem direito a um teste grátis de 3 horas. Vou te enviar agora o tutorial 
 
 Pronto! É só me avisar quando o app estiver instalado que eu te passo seu acesso para o teste grátis.
 Se não conseguir, me avise que vou te encaminhar para o suporte.`;
+    } else if (intentName === "Pagamento") {
+      fulfillmentText = `Para realizar o pagamento ou renovar, é só usar a chave PIX abaixo:
 
-    } else if (userQuery.includes("philco") || userQuery.includes("tcl") || userQuery.includes("semp") || userQuery.includes("aoc")) {
-      fulfillmentText = `Uma **TV ${userQuery}**, legal!
+Chave PIX: ${PIX_KEY}
+Nome: ${PIX_NAME}
+Valor: R$ ${PLAN_VALUE}
 
-Para eu te ajudar com o tutorial, preciso saber qual o sistema da sua TV.
+Assim que você fizer o pagamento, me envie o comprovante, por favor! 😉`;
 
-A tela inicial dela tem a loja de apps da Google (o símbolo de um triângulo colorido do **Play Store**) ou o menu tem a opção **"Canais de Streaming"** (com a logo do **Roku**)?`;
-    
-    } else if (userQuery.includes("diana silva") || userQuery.includes("diana") || userQuery.includes("silva")) {
-        fulfillmentText = `Certo, Diana.
+    } else if (intentName === "Suporte") {
+      fulfillmentText = "Certo, vou te conectar com o nosso suporte.\n\nPor favor, me diga seu nome completo.";
+
+    } else if (intentName === "Suporte - Nome") {
+        const userName = req.body.queryResult.parameters['given-name'] || req.body.queryResult.parameters['person']?.givenName;
+        if (userName) {
+            fulfillmentText = `Certo, ${userName}.
 
 Aguarde um momento, vou encaminhar seu atendimento para o suporte.`;
+        } else {
+            fulfillmentText = "Certo. Aguarde um momento, vou encaminhar seu atendimento para o suporte.";
+        }
+    } else if (intentName === "Default Welcome Intent") {
+      const greeting = getGreeting();
+      fulfillmentText = `Olá! ${greeting}, Seja bem-vindo(a) à MAGTV! Meu nome é Dani.
 
-    } else {
-      // Mensagem genérica para quando não há regra programada
+Como posso te ajudar hoje?
+1️⃣ Novo Cliente
+2️⃣ Pagamento
+3️⃣ Suporte`;
+
+    } else if (intentName === "Default Fallback Intent") {
       fulfillmentText = `Desculpe, não entendi sua pergunta. Por favor, escolha uma das opções do menu principal (1️⃣ Novo Cliente, 2️⃣ Pagamento ou 3️⃣ Suporte) ou entre em contato com o suporte em nosso número de WhatsApp.`;
+      
+    } else {
+        // Mensagem genérica para intenções que não foram mapeadas aqui
+        fulfillmentText = `Desculpe, não entendi sua pergunta. Por favor, escolha uma das opções do menu principal (1️⃣ Novo Cliente, 2️⃣ Pagamento ou 3️⃣ Suporte) ou entre em contato com o suporte em nosso número de WhatsApp.`;
     }
 
     const dialogflowResponse = {
