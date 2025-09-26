@@ -29,7 +29,7 @@ app.post('/webhook', (req, res) => {
     let fulfillmentText = "";
 
     // Lógica principal do bot, baseada no nome da intenção
-    if (intentName === "Novo Cliente") {
+    if (intentName === "DefaultWelcomeIntent - NovoCliente") {
       fulfillmentText = `Ótimo!
 
 Então, nosso plano de assinatura é o **Mensal**, e custa apenas **R$ 30,00**.
@@ -44,9 +44,9 @@ Você pode usar em **Smart TVs Samsung, LG, Roku** (via IPTV) e em dispositivos 
 ⚠️ Importante: **não funciona em iOS** (iPhone/iPad).
 
 Você tem direito a 3 horas de teste grátis. Vamos começar?`;
-      
+
     } else if (intentName === "NovoCliente - Sim") {
-        fulfillmentText = `Antes de começarmos, qual a marca da sua TV?`;
+      fulfillmentText = `Antes de começarmos, qual a marca da sua TV?`;
 
     } else if (intentName === "NovoCliente - Sim - SmartTV" || intentName === "NovoCliente - Sim - Samsung" || intentName === "NovoCliente - Sim - LG") {
       fulfillmentText = `Ótimo! Já sei o que fazer.
@@ -118,7 +118,7 @@ Você tem direito a um teste grátis de 3 horas. Vou te enviar agora o tutorial 
 
 Pronto! É só me avisar quando o app estiver instalado que eu te passo seu acesso para o teste grátis.
 Se não conseguir, me avise que vou te encaminhar para o suporte.`;
-    } else if (intentName === "Pagamento") {
+    } else if (intentName === "DefaultWelcomeIntent - Pagamento") {
       fulfillmentText = `Para realizar o pagamento ou renovar, é só usar a chave PIX abaixo:
 
 Chave PIX: ${PIX_KEY}
@@ -127,7 +127,7 @@ Valor: R$ ${PLAN_VALUE}
 
 Assim que você fizer o pagamento, me envie o comprovante, por favor! 😉`;
 
-    } else if (intentName === "Suporte") {
+    } else if (intentName === "DefaultWelcomeIntent - Suporte") {
       fulfillmentText = "Certo, vou te conectar com o nosso suporte.\n\nPor favor, me diga seu nome completo.";
 
     } else if (intentName === "Suporte - Nome") {
