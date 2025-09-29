@@ -29,7 +29,11 @@ app.post('/webhook', (req, res) => {
     let fulfillmentText = "";
 
     // Lógica principal do bot, baseada no nome da intenção
-    if (intentName === "DefaultWelcomeIntent - NovoCliente") {
+    
+    // ----------------------------------------------------------------
+    // INÍCIO DO NOVO FLUXO DO MENU (N1, N2, N3)
+    // ----------------------------------------------------------------
+    if (intentName === "Menu Principal - N1") {
       fulfillmentText = `Ótimo!
 
 Então, nosso plano de assinatura é o **Mensal**, e custa apenas **R$ 30,00**.
@@ -45,10 +49,35 @@ Você pode usar em **Smart TVs Samsung, LG, Roku** (via IPTV) e em dispositivos 
 
 Você tem direito a 3 horas de teste grátis. Vamos começar?`;
 
-    } else if (intentName === "NovoCliente - Sim") {
+    } else if (intentName === "Menu Principal - N2 - select.number") {
+      fulfillmentText = `Para realizar o pagamento ou renovar, é só usar a chave PIX abaixo:
+
+Chave PIX: ${PIX_KEY}
+Nome: ${PIX_NAME}
+Valor: R$ ${PLAN_VALUE}
+
+Assim que você fizer o pagamento, me envie o comprovante, por favor! 😉`;
+
+    } else if (intentName === "Menu Principal - N3 - select.number") {
+      fulfillmentText = "Certo, vou te conectar com o nosso suporte.\n\nPor favor, me diga seu nome completo.";
+
+    } else if (intentName === "Suporte - Nome") {
+        const userName = req.body.queryResult.parameters['given-name'] || req.body.queryResult.parameters['person']?.givenName;
+        if (userName) {
+            fulfillmentText = `Certo, ${userName}.
+
+Aguarde um momento, vou encaminhar seu atendimento para o suporte.`;
+        } else {
+            fulfillmentText = "Certo. Aguarde um momento, vou encaminhar seu atendimento para o suporte.";
+        }
+
+    // ----------------------------------------------------------------
+    // FLUXO DE TESTE GRÁTIS (FOLLOW-UP DA N1)
+    // ----------------------------------------------------------------
+    } else if (intentName === "MenuPrincipal - N1 - Sim") {
       fulfillmentText = `Antes de começarmos, qual a marca da sua TV?`;
 
-    } else if (intentName === "NovoCliente - Sim - SmartTV" || intentName === "NovoCliente - Sim - Samsung" || intentName === "NovoCliente - Sim - LG") {
+    } else if (intentName === "MenuPrincipal - N1 - Sim - SmartTV" || intentName === "MenuPrincipal - N1 - Sim - Samsung" || intentName === "MenuPrincipal - N1 - Sim - LG") {
       fulfillmentText = `Ótimo! Já sei o que fazer.
 
 Você tem direito a um teste grátis de 3 horas. Aguarde um momento para eu criar seu acesso!
@@ -65,7 +94,7 @@ Você tem direito a um teste grátis de 3 horas. Aguarde um momento para eu cria
 Pronto! É só inserir seu login e senha que vamos fornecer!
 Se não conseguir, me avise que vou te encaminhar para o suporte.`;
 
-    } else if (intentName === "NovoCliente - Sim - Roku") {
+    } else if (intentName === "MenuPrincipal - N1 - Sim - Roku") {
       fulfillmentText = `Ah, entendi! Então sua TV usa o sistema **Roku TV**.
 
 Ótimo! Agora vou te passar o passo a passo para instalar o nosso app.
@@ -83,7 +112,7 @@ Se não conseguir, me avise que vou te encaminhar para o suporte.`;
 Você tem direito a um teste grátis de 3 horas. Aguarde um momento para criar seu acesso!
 Se não conseguir, me avise que vou te encaminhar para o suporte.`;
 
-    } else if (intentName === "NovoCliente - Sim - AndroidTV" || intentName === "NovoCliente - Sim - Sony" || intentName === "NovoCliente - Sim - Multilaser" || intentName === "NovoCliente - Sim - Philips") {
+    } else if (intentName === "MenuPrincipal - N1 - Sim - AndroidTV" || intentName === "MenuPrincipal - N1 - Sim - Sony" || intentName === "MenuPrincipal - N1 - Sim - Multilaser" || intentName === "MenuPrincipal - N1 - Sim - Philips") {
       fulfillmentText = `Ótimo! Sua TV usa o sistema **Android TV**, então você vai conseguir usar nosso serviço tranquilamente.
 
 Você tem direito a um teste grátis de 3 horas. Vou te enviar agora o tutorial para a instalação do nosso aplicativo.
@@ -101,7 +130,7 @@ Você tem direito a um teste grátis de 3 horas. Vou te enviar agora o tutorial 
 Pronto! É só me avisar quando o app estiver instalado que eu te passo seu acesso para o teste grátis.
 Se não conseguir, me avise que vou te encaminhar para o suporte.`;
 
-    } else if (intentName === "NovoCliente - Sim - Celular" || intentName === "NovoCliente - Sim - Smartphone") {
+    } else if (intentName === "MenuPrincipal - N1 - Sim - Celular" || intentName === "MenuPrincipal - N1 - Sim - Smartphone") {
       fulfillmentText = `Perfeito!
 
 Você tem direito a um teste grátis de 3 horas. Vou te enviar agora o tutorial para a instalação do nosso aplicativo no seu celular.
@@ -118,27 +147,10 @@ Você tem direito a um teste grátis de 3 horas. Vou te enviar agora o tutorial 
 
 Pronto! É só me avisar quando o app estiver instalado que eu te passo seu acesso para o teste grátis.
 Se não conseguir, me avise que vou te encaminhar para o suporte.`;
-    } else if (intentName === "DefaultWelcomeIntent - Pagamento") {
-      fulfillmentText = `Para realizar o pagamento ou renovar, é só usar a chave PIX abaixo:
-
-Chave PIX: ${PIX_KEY}
-Nome: ${PIX_NAME}
-Valor: R$ ${PLAN_VALUE}
-
-Assim que você fizer o pagamento, me envie o comprovante, por favor! 😉`;
-
-    } else if (intentName === "DefaultWelcomeIntent - Suporte") {
-      fulfillmentText = "Certo, vou te conectar com o nosso suporte.\n\nPor favor, me diga seu nome completo.";
-
-    } else if (intentName === "Suporte - Nome") {
-        const userName = req.body.queryResult.parameters['given-name'] || req.body.queryResult.parameters['person']?.givenName;
-        if (userName) {
-            fulfillmentText = `Certo, ${userName}.
-
-Aguarde um momento, vou encaminhar seu atendimento para o suporte.`;
-        } else {
-            fulfillmentText = "Certo. Aguarde um momento, vou encaminhar seu atendimento para o suporte.";
-        }
+    
+    // ----------------------------------------------------------------
+    // INTENÇÕES PADRÃO
+    // ----------------------------------------------------------------
     } else if (intentName === "Default Welcome Intent") {
       const greeting = getGreeting();
       fulfillmentText = `Olá! ${greeting}, Seja bem-vindo(a) à MAGTV! Meu nome é Dani.
@@ -152,7 +164,7 @@ Como posso te ajudar hoje?
       fulfillmentText = `Desculpe, não entendi sua pergunta. Por favor, escolha uma das opções do menu principal (1️⃣ Novo Cliente, 2️⃣ Pagamento ou 3️⃣ Suporte) ou entre em contato com o suporte em nosso número de WhatsApp.`;
       
     } else {
-        // Mensagem genérica para intenções que não foram mapeadas aqui
+        // Mensagem genérica para intenções que não foram mapeadas
         fulfillmentText = `Desculpe, não entendi sua pergunta. Por favor, escolha uma das opções do menu principal (1️⃣ Novo Cliente, 2️⃣ Pagamento ou 3️⃣ Suporte) ou entre em contato com o suporte em nosso número de WhatsApp.`;
     }
 
