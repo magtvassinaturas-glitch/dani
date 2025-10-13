@@ -30,7 +30,7 @@ const mapToFulfillmentMessages = (messages) => {
     return messages.map(text => ({ text: { text: [text] } }));
 };
 
-// 1. TUTORIAL SMART TV (SAMSUNG / LG)
+// 1. TUTORIAL SMART TV (SAMSUNG / LG) - Função que envia o tutorial Samsung/LG
 const getSmartTVInstallTutorial = () => {
     const messages = [
         "📺 Como instalar o XCloud TV na sua TV",
@@ -46,11 +46,11 @@ const getSmartTVInstallTutorial = () => {
     return mapToFulfillmentMessages(messages);
 };
 
-// 2. TUTORIAL ROKU
+// 2. TUTORIAL ROKU - Função que envia o tutorial Roku
 const getRokuInstallTutorial = () => {
     const messages = [
         "📺 Como instalar o XCloud TV na sua TV",
-        "Agora o passo a passo para *Sistema Roku TV*:",
+        "Passo a passo para *Sistema Roku TV*:",
         "1. Aperte o botão Home no controle remoto 🎚",
         "2. Vá até *Canais de Streaming* na tela principal.",
         "3. Selecione a opção *Procurar Canais*.",
@@ -62,23 +62,7 @@ const getRokuInstallTutorial = () => {
     return mapToFulfillmentMessages(messages);
 };
 
-// 3. TUTORIAL ANDROID / CELULAR
-const getAndroidMobileInstallTutorial = () => {
-    const messages = [
-        "📱 Tutorial para Celular Android",
-        "1. Como Instalar o Aplicativo Rush One",
-        "2. Abra o navegador *Google Chrome* no seu celular.",
-        "3. Na barra de endereço, digite o seguinte site: " + SITE_RUSH,
-        "4. Na página que abrir, encontre o aplicativo com o nome *Rush One!*",
-        "5. Clique no botão *Baixar* e aguarde o download.",
-        "6. Quando o download terminar, clique no arquivo baixado para *instalar o aplicativo*.",
-        "7. Se for a primeira vez, pode ser que o celular peça permissão para instalar de fontes desconhecidas; basta aceitar.",
-        "8. Após instalar é só abrir o aplicativo, nos envie a palavra **TESTE**!"
-    ];
-    return mapToFulfillmentMessages(messages);
-};
-
-// 4. TUTORIAL ANDROID TV / TV BOX
+// 3. TUTORIAL ANDROID TV / TV BOX - Função que envia o tutorial Android (TV Box/Downloader)
 const getAndroidTVInstallTutorial = () => {
     const messages = [
         "📺 Tutorial para Android TV (TV Box)",
@@ -95,21 +79,23 @@ const getAndroidTVInstallTutorial = () => {
     return mapToFulfillmentMessages(messages);
 };
 
+
 // =================================================================
 // WEBHOOK PRINCIPAL
 // =================================================================
 app.post('/webhook', (req, res) => {
   try {
     const intentName = req.body.queryResult.intent.displayName;
+    const queryText = req.body.queryResult.queryText;
     let response = {};
     let fulfillmentMessages = [];
 
     // ----------------------------------------------------------------
-    // 1. INTENÇÕES DO MENU PRINCIPAL (N1 com Delay, N2, N3)
+    // 1. INTENÇÕES DO MENU PRINCIPAL, SUPORTE, TESTE (INALTERADAS)
     // ----------------------------------------------------------------
     if (intentName === "Menu Principal - N1") {
-        // RESPOSTA DO MENU 1 QUEBRADA EM MÚLTIPLAS MENSAGENS COM DELAY
-        fulfillmentMessages = [
+        // ... (Bloco do Menu 1)
+        fulfillmentMessages = mapToFulfillmentMessages([
             `Ótimo!`,
             `Então, nosso plano de assinatura é o **Mensal**, e custa apenas **R$ 30,00**.`,
             `Ele inclui:
@@ -120,8 +106,7 @@ app.post('/webhook', (req, res) => {
             `Você pode usar em **Smart TVs Samsung, LG, Roku** (via IPTV) e em dispositivos **Android** (celulares, TV Box, Android TV) através do nosso app exclusivo.`,
             `⚠️ Importante: **não funciona em iOS** (iPhone/iPad).`,
             `Você tem direito a 3 horas de teste grátis. Vamos começar?`
-        ];
-        fulfillmentMessages = mapToFulfillmentMessages(fulfillmentMessages);
+        ]);
         
     } else if (intentName === "Menu Principal - N2 - select.number") {
         response.fulfillmentText = `Para realizar o pagamento ou renovar, é só usar a chave PIX abaixo:
@@ -140,31 +125,49 @@ Assim que você fizer o pagamento, me envie o comprovante, por favor! 😉`;
         const nameText = userName ? `Certo, ${userName}.` : 'Certo.';
         response.fulfillmentText = `${nameText}\n\nAguarde um momento, vou encaminhar seu atendimento para o suporte.`;
 
+    } else if (intentName === "TESTE") {
+        response.fulfillmentText = `Aguarde um momento...`;
+
     // ----------------------------------------------------------------
-    // 2. TUTORIAIS DE INSTALAÇÃO
+    // 2. INTENTS DE TUTORIAL (APENAS AS QUE USAM O WEBHOOK DIRETAMENTE)
     // ----------------------------------------------------------------
+
+    // SAMSUNG / LG (FLUXO DIRETO)
     } else if (intentName === "TUTORIAL SMARTV") {
         fulfillmentMessages = getSmartTVInstallTutorial();
 
+    // ROKU (FLUXO DIRETO)
     } else if (intentName === "TUTORIAL ROKU") {
         fulfillmentMessages = getRokuInstallTutorial();
 
-    } else if (intentName === "TUTORIAL ANDROID") {
-        // Tenta inferir se é celular ou TV Box/Android TV pelo texto da query
-        const originalQuery = req.body.queryResult.queryText.toLowerCase();
-        
-        if (originalQuery.includes('celular') || originalQuery.includes('smartphone')) {
-             fulfillmentMessages = getAndroidMobileInstallTutorial();
-        } else {
-             fulfillmentMessages = getAndroidTVInstallTutorial();
-        }
+    // TV BOX / ANDROID GENÉRICO (FLUXO DIRETO - Se o cliente não usa marca ambígua)
+    } else if (intentName === "TUTORIAL ANDROIDTV") { 
+        fulfillmentMessages = getAndroidTVInstallTutorial();
 
     // ----------------------------------------------------------------
-    // 3. INTENÇÃO DE PONTE: TESTE (Resposta simples para transição humana)
+    // 3. INTENT DE CONFIRMAÇÃO DO SISTEMA (CHAVE DO FLUXO AMBÍGUO)
     // ----------------------------------------------------------------
-    } else if (intentName === "TESTE") {
-        // Ponto de transição para o atendimento humano.
-        response.fulfillmentText = `Aguarde um momento...`;
+    } else if (intentName === "Sistemas de Confirmação") { // <--- NOME EXATO DA INTENT
+        
+        const lowerQuery = queryText.toLowerCase();
+
+        // **A LÓGICA DE DECISÃO:** Analisa o que o cliente digitou para confirmar o sistema.
+        
+        // 3a. Verifica se a resposta do cliente é sobre Android/Google
+        if (lowerQuery.includes('android') || lowerQuery.includes('google') || lowerQuery.includes('playstore') || lowerQuery.includes('triângulo') || lowerQuery.includes('apps google')) {
+             // Envia o tutorial Android TV/TV Box
+             fulfillmentMessages = getAndroidTVInstallTutorial(); 
+        
+        // 3b. Verifica se a resposta do cliente é sobre Roku
+        } else if (lowerQuery.includes('roku') || lowerQuery.includes('streaming') || lowerQuery.includes('roxo') || lowerQuery.includes('canais')) {
+             // Envia o tutorial Roku
+             fulfillmentMessages = getRokuInstallTutorial();
+             
+        } else {
+             // Resposta de fallback caso o cliente não seja claro
+             response.fulfillmentText = "Não consegui identificar o sistema. Me diga apenas uma palavra: 'Android' ou 'Roku'?";
+        }
+
 
     // 4. INTENÇÕES PADRÃO
     } else if (intentName === "Default Welcome Intent") {
@@ -178,7 +181,7 @@ Assim que você fizer o pagamento, me envie o comprovante, por favor! 😉`;
         response.fulfillmentText = `Desculpe, não entendi sua pergunta. Por favor, escolha uma das opções do menu principal (1️⃣ Novo Cliente, 2️⃣ Pagamento ou 3️⃣ Suporte) ou entre em contato com o suporte em nosso número de WhatsApp.`;
     }
 
-    // Retorna fulfillmentMessages se houver, caso contrário, usa fulfillmentText
+    // Retorna fulfillmentMessages (com delay) ou fulfillmentText
     if (fulfillmentMessages.length > 0) {
         response.fulfillmentMessages = fulfillmentMessages;
     } 
