@@ -107,7 +107,7 @@ app.post('/webhook', (req, res) => {
     // 1. INTENÇÕES DO MENU PRINCIPAL (Consistência Garantida)
     // ----------------------------------------------------------------
     if (intentName === "Menu Principal - N1") { 
-        // Opção 1: Novo Cliente (Fluxo com várias mensagens)
+        // Opção 1: Novo Cliente 
         fulfillmentMessages = mapToFulfillmentMessages([
             `Ótimo!`,
             `Então, nosso plano de assinatura é o **Mensal**, e custa apenas **R$ 30,00**.`,
@@ -117,4 +117,125 @@ app.post('/webhook', (req, res) => {
 - Mais de **14 mil** séries e novelas
 - Animes e desenhos`,
             `Você pode usar em **Smart TVs Samsung, LG, Roku** (via IPTV) e em dispositivos **Android** (celulares, TV Box, Android TV) através do nosso app exclusivo.`,
-            `⚠️ Importante: **não funciona em iOS** (iPhone/iPad
+            `⚠️ Importante: **não funciona em iOS** (iPhone/iPad).`,
+            `Você tem direito a 3 horas de teste grátis. Vamos começar?`
+        ]);
+        
+    } else if (intentName === "Menu Principal - N2 - select.number") { 
+        // Opção 2: Pagamento 
+        fulfillmentMessages = mapToFulfillmentMessages([
+            `Para realizar o pagamento ou renovar, é só usar a chave PIX abaixo:
+
+Chave PIX: ${PIX_KEY}
+Nome: ${PIX_NAME}
+Valor: R$ ${PLAN_VALUE}
+
+Assim que você fizer o pagamento, me envie o comprovante, por favor! 😉`
+        ]);
+
+    } else if (intentName === "Menu Principal - N3 - select.number") { 
+        // Opção 3: Suporte (Gera Contexto)
+        // Se esta Intent apenas gerar o contexto e a resposta de pergunta for no DF, este bloco pode ficar vazio.
+        // Se precisar de Webhook, use a resposta padrão aqui:
+        // fulfillmentMessages = mapToFulfillmentMessages(["Certo, vou te conectar com o nosso suporte. Por favor, me diga seu nome completo."]);
+        
+        // Mantenho vazio ou com a resposta, dependendo de como você setou no DF. 
+        // O mais seguro é deixar o DF tratar a resposta N3 nativamente (com as 6 variações).
+        // Se o Fulfillment for LIGADO, o DF buscará a resposta no próximo bloco:
+        
+    } else if (intentName === "Suporte - Nome Capturado") { // <--- NOVO BLOCO ESSENCIAL
+        
+        // 1. Tenta capturar o nome completo ('person')
+        const personParam = req.body.queryResult.parameters['person']; 
+        
+        let userName = 'cliente'; 
+        
+        if (personParam) {
+            // Captura o nome completo (string) do @sys.person
+            if (typeof personParam === 'string' && personParam.length > 0) {
+                userName = personParam;
+            } else if (typeof personParam === 'object' && personParam.displayName) {
+                // Para o caso raro de vir como objeto
+                userName = personParam.displayName;
+            }
+        }
+        
+        // 2. Formata a resposta com o nome capturado
+        const responseText = `Certo, ${userName}.
+        
+Aguarde um momento, vou encaminhar seu atendimento para o suporte.`;
+
+        // 3. Envia a resposta final
+        response.fulfillmentText = responseText;
+        
+    } else if (intentName === "TESTE") {
+        response.fulfillmentText = `Aguarde um momento...`;
+
+    // ----------------------------------------------------------------
+    // 2. FLUXO DE TUTORIAIS
+    // ----------------------------------------------------------------
+
+    // SAMSUNG / LG (FLUXO DIRETO)
+    } else if (intentName === "TUTORIAL SMARTV") {
+        fulfillmentMessages = getSmartTVInstallTutorial();
+
+    // ROKU (FLUXO DIRETO)
+    } else if (intentName === "TUTORIAL ROKU") {
+        fulfillmentMessages = getRokuInstallTutorial();
+
+    // TV BOX / ANDROID GENÉRICO (FLUXO DIRETO)
+    } else if (intentName === "TUTORIAL ANDROIDTV") { 
+        fulfillmentMessages = getAndroidTVInstallTutorial();
+
+    // INTENT DE CONFIRMAÇÃO DO SISTEMA
+    } else if (intentName === "Sistemas de Confirmação") { 
+        
+        const lowerQuery = queryText.toLowerCase();
+
+        if (lowerQuery.includes('android') || lowerQuery.includes('google') || lowerQuery.includes('playstore') || lowerQuery.includes('triângulo') || lowerQuery.includes('apps google')) {
+             fulfillmentMessages = getAndroidTVInstallTutorial(); 
+        
+        } else if (lowerQuery.includes('roku') || lowerQuery.includes('streaming') || lowerQuery.includes('roxo') || lowerQuery.includes('canais')) {
+             fulfillmentMessages = getRokuInstallTutorial();
+             
+        } else {
+             response.fulfillmentText = "Não consegui identificar o sistema. Me diga apenas uma palavra: 'Android' ou 'Roku'?";
+        }
+
+
+    // 3. INTENÇÕES PADRÃO
+    } else if (intentName === "Default Welcome Intent") {
+        const greeting = getGreeting();
+        response.fulfillmentText = `Olá! ${greeting}, Seja bem-vindo(a) à MAGTV! Meu nome é Dani.\n\nComo posso te ajudar hoje?\n1️⃣ Novo Cliente\n2️⃣ Pagamento\n3️⃣ Suporte`;
+
+    } else if (intentName === "Default Fallback Intent") {
+        response.fulfillmentText = `Desculpe, não entendi sua pergunta. Por favor, escolha uma das opções do menu principal (1️⃣ Novo Cliente, 2️⃣ Pagamento ou 3️⃣ Suporte) ou entre em contato com o suporte em nosso número de WhatsApp.`;
+        
+    } else {
+        response.fulfillmentText = `Desculpe, não entendi sua pergunta. Por favor, escolha uma das opções do menu principal (1️⃣ Novo Cliente, 2️⃣ Pagamento ou 3️⃣ Suporte) ou entre em contato com o suporte em nosso número de WhatsApp.`;
+    }
+
+    // Lógica final de retorno: prioriza fulfillmentMessages (com delay)
+    if (fulfillmentMessages.length > 0) {
+        response.fulfillmentMessages = fulfillmentMessages;
+    } 
+
+    res.json(response);
+
+  } catch (error) {
+    console.error("Erro na requisição: ", error);
+    res.status(500).json({
+      "fulfillmentText": `Ocorreu um erro na integração. Por favor, tente novamente.`
+    });
+  }
+});
+
+// Rota de teste
+app.get('/', (req, res) => {
+    res.send('O bot está online e funcionando!');
+});
+
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => {
+  console.log(`Servidor rodando na porta ${PORT}`);
+});
