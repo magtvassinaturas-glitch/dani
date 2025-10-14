@@ -80,6 +80,18 @@ const getAndroidTVInstallTutorial = () => {
 };
 
 
+// 4. NOVA FUNÇÃO: PERGUNTA DE DESAMBIGUAÇÃO (Marca Ambígüa)
+const getAmbiguousBrandQuestion = (marca) => {
+    const messages = [
+        `Certo, ${marca}! É uma marca excelente. 😉`,
+        `As TVs da ${marca} podem ter o sistema **Android TV** (ou Google TV) ou o sistema **Roku TV**.`,
+        `Para eu te ajudar com o tutorial exato, preciso saber qual o sistema da sua TV.`,
+        `Me diz uma coisa: a tela inicial dela tem a loja de apps da Google (o símbolo de um triângulo colorido do Play Store) ou o menu tem a opção 'Canais de Streaming' (com a logo do Roku)?`
+    ];
+    return mapToFulfillmentMessages(messages);
+};
+
+
 // =================================================================
 // WEBHOOK PRINCIPAL
 // =================================================================
@@ -91,10 +103,10 @@ app.post('/webhook', (req, res) => {
     let fulfillmentMessages = [];
 
     // ----------------------------------------------------------------
-    // 1. INTENÇÕES DO MENU PRINCIPAL, SUPORTE, TESTE (INALTERADAS)
+    // 1. INTENÇÕES DO MENU PRINCIPAL (CORRIGIDAS PARA USAR FULFILLMENT MESSAGES)
     // ----------------------------------------------------------------
     if (intentName === "Menu Principal - N1") {
-        // ... (Bloco do Menu 1)
+        // Opção 1: Novo Cliente (Fluxo com várias mensagens)
         fulfillmentMessages = mapToFulfillmentMessages([
             `Ótimo!`,
             `Então, nosso plano de assinatura é o **Mensal**, e custa apenas **R$ 30,00**.`,
@@ -109,16 +121,22 @@ app.post('/webhook', (req, res) => {
         ]);
         
     } else if (intentName === "Menu Principal - N2 - select.number") {
-        response.fulfillmentText = `Para realizar o pagamento ou renovar, é só usar a chave PIX abaixo:
+        // Opção 2: Pagamento (AGORA USA fulfillmentMessages)
+        fulfillmentMessages = mapToFulfillmentMessages([
+            `Para realizar o pagamento ou renovar, é só usar a chave PIX abaixo:
 
 Chave PIX: ${PIX_KEY}
 Nome: ${PIX_NAME}
 Valor: R$ ${PLAN_VALUE}
 
-Assim que você fizer o pagamento, me envie o comprovante, por favor! 😉`;
+Assim que você fizer o pagamento, me envie o comprovante, por favor! 😉`
+        ]);
 
     } else if (intentName === "Menu Principal - N3 - select.number") {
-        response.fulfillmentText = "Certo, vou te conectar com o nosso suporte.\n\nPor favor, me diga seu nome completo.";
+        // Opção 3: Suporte (AGORA USA fulfillmentMessages)
+        fulfillmentMessages = mapToFulfillmentMessages([
+            "Certo, vou te conectar com o nosso suporte.\n\nPor favor, me diga seu nome completo."
+        ]);
 
     } else if (intentName === "Suporte - Nome") {
         const userName = req.body.queryResult.parameters['given-name'] || req.body.queryResult.parameters['person']?.givenName;
@@ -129,8 +147,15 @@ Assim que você fizer o pagamento, me envie o comprovante, por favor! 😉`;
         response.fulfillmentText = `Aguarde um momento...`;
 
     // ----------------------------------------------------------------
-    // 2. INTENTS DE TUTORIAL (APENAS AS QUE USAM O WEBHOOK DIRETAMENTE)
+    // 2. FLUXO DE TUTORIAIS (MANTIDOS)
     // ----------------------------------------------------------------
+
+    // MARCAS AMBÍGUAS (Pergunta)
+    } else if (intentName === "MARCA_AMBIGUA_PERGUNTA") { 
+        // Lógica para detectar e usar a marca na resposta
+        const marcaDetectada = queryText.split(' ').find(word => ['tcl', 'philco', 'philips', 'aiwa', 'multilaser'].includes(word.toLowerCase())) || 'sua TV';
+
+        fulfillmentMessages = getAmbiguousBrandQuestion(marcaDetectada);
 
     // SAMSUNG / LG (FLUXO DIRETO)
     } else if (intentName === "TUTORIAL SMARTV") {
@@ -140,36 +165,27 @@ Assim que você fizer o pagamento, me envie o comprovante, por favor! 😉`;
     } else if (intentName === "TUTORIAL ROKU") {
         fulfillmentMessages = getRokuInstallTutorial();
 
-    // TV BOX / ANDROID GENÉRICO (FLUXO DIRETO - Se o cliente não usa marca ambígua)
+    // TV BOX / ANDROID GENÉRICO (FLUXO DIRETO)
     } else if (intentName === "TUTORIAL ANDROIDTV") { 
         fulfillmentMessages = getAndroidTVInstallTutorial();
 
-    // ----------------------------------------------------------------
-    // 3. INTENT DE CONFIRMAÇÃO DO SISTEMA (CHAVE DO FLUXO AMBÍGUO)
-    // ----------------------------------------------------------------
-    } else if (intentName === "Sistemas de Confirmação") { // <--- NOME EXATO DA INTENT
+    // INTENT DE CONFIRMAÇÃO DO SISTEMA
+    } else if (intentName === "Sistemas de Confirmação") { 
         
         const lowerQuery = queryText.toLowerCase();
 
-        // **A LÓGICA DE DECISÃO:** Analisa o que o cliente digitou para confirmar o sistema.
-        
-        // 3a. Verifica se a resposta do cliente é sobre Android/Google
         if (lowerQuery.includes('android') || lowerQuery.includes('google') || lowerQuery.includes('playstore') || lowerQuery.includes('triângulo') || lowerQuery.includes('apps google')) {
-             // Envia o tutorial Android TV/TV Box
              fulfillmentMessages = getAndroidTVInstallTutorial(); 
         
-        // 3b. Verifica se a resposta do cliente é sobre Roku
         } else if (lowerQuery.includes('roku') || lowerQuery.includes('streaming') || lowerQuery.includes('roxo') || lowerQuery.includes('canais')) {
-             // Envia o tutorial Roku
              fulfillmentMessages = getRokuInstallTutorial();
              
         } else {
-             // Resposta de fallback caso o cliente não seja claro
              response.fulfillmentText = "Não consegui identificar o sistema. Me diga apenas uma palavra: 'Android' ou 'Roku'?";
         }
 
 
-    // 4. INTENÇÕES PADRÃO
+    // 3. INTENÇÕES PADRÃO
     } else if (intentName === "Default Welcome Intent") {
         const greeting = getGreeting();
         response.fulfillmentText = `Olá! ${greeting}, Seja bem-vindo(a) à MAGTV! Meu nome é Dani.\n\nComo posso te ajudar hoje?\n1️⃣ Novo Cliente\n2️⃣ Pagamento\n3️⃣ Suporte`;
