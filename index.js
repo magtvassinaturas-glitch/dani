@@ -48,7 +48,8 @@ const getPersonalizedMenu = (nomeCliente) => {
     const indexAleatorio = Math.floor(Math.random() * frasesDani.length);
     let saudacao = frasesDani[indexAleatorio];
 
-    const nomeFormatado = nomeCliente.charAt(0).toUpperCase() + nomeCliente.slice(1).toLowerCase();
+    // Garante que apenas o primeiro nome seja formatado corretamente
+    const nomeFormatado = nomeCliente.split(' ')[0].charAt(0).toUpperCase() + nomeCliente.split(' ')[0].slice(1).toLowerCase();
     saudacao = saudacao.replace('[Nome do Cliente]', nomeFormatado);
     
     const menuPrincipal = `
@@ -119,24 +120,34 @@ app.post('/webhook', (req, res) => {
     if (nomeUserParam) {
         if (typeof nomeUserParam === 'string' && nomeUserParam.length > 0) {
             userName = nomeUserParam;
-        // ***** CORREÇÃO APLICADA AQUI *****
-        // O JSON usa "name", não "displayName"
-        } else if (typeof nomeUserParam === 'object' && nomeUserParam.name) {
-            userName = nomeUserParam.name;
+        // ***** Extração reforçada para o formato { "name": "Davi" } E o formato { "displayName": "Davi" } *****
+        } else if (typeof nomeUserParam === 'object') {
+            if (nomeUserParam.name) {
+                userName = nomeUserParam.name;
+            } else if (nomeUserParam.displayName) {
+                userName = nomeUserParam.displayName;
+            }
         }
     }
     
     // =================================================================
-    // ***** NOVA LÓGICA CENTRALIZADA PARA SAUDAÇÃO INICIAL *****
+    // ***** LÓGICA DE SAUDAÇÃO INICIAL (Default Welcome Intent) *****
     // =================================================================
-    // Se a Intent for a Default Welcome Intent E o nome foi capturado,
-    // o Webhook envia a saudação personalizada e o menu.
-    if (intentName === "Default Welcome Intent" && userName) {
-         fulfillmentMessages = getPersonalizedMenu(userName);
-         response.fulfillmentMessages = fulfillmentMessages;
-         return res.json(response); 
+    if (intentName === "Default Welcome Intent") {
+        
+        if (userName) {
+             // Se o nome foi capturado, envia a saudação personalizada e o menu.
+            fulfillmentMessages = getPersonalizedMenu(userName);
+            response.fulfillmentMessages = fulfillmentMessages;
+            // Retorna imediatamente. Se isso não funcionar, o problema é puramente no DXP.
+            return res.json(response); 
+        }
+        
+        // Lógica estática SE O NOME NÃO FOI CAPTURADO (primeira vez que o bot fala)
+        const greeting = getGreeting();
+        response.fulfillmentText = `Olá! ${greeting}, Seja bem-vindo(a) à MAGTV! Meu nome é Dani.\n\nComo posso te ajudar hoje?\n1️⃣ Novo Cliente\n2️⃣ Pagamento\n3️⃣ Suporte`;
+        
     }
-    // =================================================================
 
 
     // ----------------------------------------------------------------
@@ -214,7 +225,7 @@ Assim que você fizer o pagamento, me envie o comprovante, por favor! 😉`
         
         if (userName) {
             const firstName = userName.split(' ')[0];
-            const formattedFirstName = firstName.charAt(0).toUpperCase() + firstName.slice(1).toLowerCase();
+            const formattedFirstName = userName.charAt(0).toUpperCase() + userName.slice(1).toLowerCase();
             
             responseText = `Certo, ${formattedFirstName}.
 Aguarde um momento, vou encaminhar seu atendimento para o suporte.`;
@@ -254,13 +265,8 @@ Aguarde um momento, vou encaminhar seu atendimento para o suporte.`;
 
 
     // ----------------------------------------------------------------
-    // 3. INTENÇÕES PADRÃO
+    // 3. INTENÇÕES PADRÃO (Fallback/Resto)
     // ----------------------------------------------------------------
-    } else if (intentName === "Default Welcome Intent") {
-        // Esta parte só será executada se o nome AINDA não foi capturado.
-        const greeting = getGreeting();
-        response.fulfillmentText = `Olá! ${greeting}, Seja bem-vindo(a) à MAGTV! Meu nome é Dani.\n\nComo posso te ajudar hoje?\n1️⃣ Novo Cliente\n2️⃣ Pagamento\n3️⃣ Suporte`;
-
     } else if (intentName === "Default Fallback Intent") {
         response.fulfillmentText = `Desculpe, não entendi sua pergunta. Por favor, escolha uma das opções do menu principal (1️⃣ Novo Cliente, 2️⃣ Pagamento ou 3️⃣ Suporte) ou entre em contato com o suporte em nosso número de WhatsApp.`;
         
