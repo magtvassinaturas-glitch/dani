@@ -10,7 +10,7 @@ const CODE_DOWNLOADER = "5977492"; // Seu código
 const SITE_RUSH = "https://rush.ninja/";
 
 // =================================================================
-// NOVO: LISTA DE FRASES DA DANI (PARA ALEATORIEDADE E PERSONALIZAÇÃO)
+// LISTA DE FRASES DA DANI (PARA ALEATORIEDADE E PERSONALIZAÇÃO)
 // =================================================================
 const frasesDani = [
     "Olá [Nome do Cliente]! Seja muito bem-vindo(a) à MAGTV! Meu nome é Dani. ", 
@@ -42,7 +42,7 @@ const mapToFulfillmentMessages = (messages) => {
 };
 
 // =================================================================
-// NOVO: FUNÇÃO PARA GERAR A SAUDAÇÃO PERSONALIZADA E O MENU COM DELAY
+// FUNÇÃO PARA GERAR A SAUDAÇÃO PERSONALIZADA E O MENU COM DELAY
 // =================================================================
 const getPersonalizedMenu = (nomeCliente) => {
     
@@ -68,7 +68,7 @@ Como posso te ajudar hoje? Por favor, escolha uma das opções abaixo:
 };
 
 // =================================================================
-// FUNÇÕES REUTILIZÁVEIS PARA TUTORIAIS (RETORNANDO ARRAY DE MENSAGENS)
+// FUNÇÕES REUTILIZÁVEIS PARA TUTORIAIS
 // =================================================================
 
 // 1. TUTORIAL SMART TV (SAMSUNG / LG)
@@ -143,17 +143,16 @@ app.post('/webhook', (req, res) => {
     let response = {};
     let fulfillmentMessages = [];
 
-    // Tenta capturar o nome do cliente. Ele será usado nas Intents N1 e N3.
-    const personParam = req.body.queryResult.parameters['nomeuser']; 
+    // Tenta capturar o nome do cliente usando o parâmetro CORRETO: 'nomeuser'
+    const nomeUserParam = req.body.queryResult.parameters['nomeuser']; 
     let userName = null;
 
-    if (personParam) {
-        // Captura o nome completo (string)
-        if (typeof personParam === 'string' && personParam.length > 0) {
-            userName = personParam;
-        } else if (typeof personParam === 'object' && personParam.displayName) {
-            // Para o caso de vir como objeto
-            userName = personParam.displayName;
+    if (nomeUserParam) {
+        if (typeof nomeUserParam === 'string' && nomeUserParam.length > 0) {
+            userName = nomeUserParam;
+        } else if (typeof nomeUserParam === 'object' && nomeUserParam.displayName) {
+            // Caso raro de vir como objeto
+            userName = nomeUserParam.displayName;
         }
     }
 
@@ -164,9 +163,34 @@ app.post('/webhook', (req, res) => {
     if (intentName === "Menu Principal - N1") { 
         // Opção 1: Novo Cliente 
         
-        // Se o nome foi capturado, usa a saudação personalizada com delay
+        // Se o nome foi capturado, usa a saudação personalizada com delay E RETORNA
         if (userName) {
-            fulfillmentMessages = getPersonalizedMenu(userName);
+            
+            // 1. Personaliza e formata o nome (apenas o primeiro nome, capitalizado)
+            const firstName = userName.split(' ')[0];
+            const formattedFirstName = firstName.charAt(0).toUpperCase() + firstName.slice(1).toLowerCase();
+            
+            // 2. CRIA A RESPOSTA PERSONALIZADA (Com base na sua frase)
+            fulfillmentMessages = mapToFulfillmentMessages([
+                `Que maravilha ${formattedFirstName}! Fico muito feliz que você queira fazer parte da família MAGTV! 🤩`,
+                `Deixa eu te contar um pouco sobre o nosso plano:`,
+                `Plano Mensal: **R$ ${PLAN_VALUE}**`, // Usando sua constante
+                `Ele inclui:
+- Mais de **2.000** canais abertos e fechados
+- Mais de **20 mil** filmes
+- Mais de **14 mil** séries e novelas
+- Animes e desenhos para toda a família! É conteúdo que não acaba mais! 🥳`,
+                `Nosso serviço funciona perfeitamente em:
+ * Smart TVs: Samsung, LG, Roku (usando a tecnologia IPTV).
+ * Dispositivos Android: Celulares, TV Box e Android TV (com nosso app exclusivo).`,
+                `⚠️ Importante: Por enquanto, não funcionamos em dispositivos iOS (iPhone/iPad).`,
+                `Para te ajudar com a instalação, preciso de uma informação rapidinha:
+Você vai usar o serviço em SMARTV, ANDROIDTV ou Celular, e qual a marca do seu dispositivo? Assim eu já te mando o tutorial certinho! 😉`
+            ]);
+            
+            // Define as mensagens e retorna imediatamente, encerrando o Webhook
+            response.fulfillmentMessages = fulfillmentMessages;
+            return res.json(response); 
 
         } else {
              // Caso a Intent seja chamada sem o nome (Fallback/Lógica Original)
@@ -199,31 +223,27 @@ Assim que você fizer o pagamento, me envie o comprovante, por favor! 😉`
     } else if (intentName === "Menu Principal - N3 - select.number") { 
         // Opção 3: Suporte (Gera Contexto)
         
-        // Se o nome foi capturado, usa a saudação personalizada com delay
+        // Se o nome foi capturado, usa a saudação personalizada com delay E RETORNA
         if (userName) {
             fulfillmentMessages = getPersonalizedMenu(userName);
-
-        } else {
-            // Se esta Intent apenas gerar o contexto e a resposta de pergunta for no DF, este bloco pode ficar vazio.
-            // Para evitar que o Webhook sobreponha a pergunta do DF, deixo o bloco vazio (depende da sua configuração DF).
-            // A lógica é que o Dialogflow pede o nome e, ao receber, chama esta Intent DE NOVO.
-        }
+            response.fulfillmentMessages = fulfillmentMessages;
+            return res.json(response); // <-- RETORNO IMEDIATO APÓS A SAUDAÇÃO
+        } 
         
     } else if (intentName === "Suporte - Nome Capturado") { 
         
-        let formattedUserName = 'cliente'; 
+        let responseText = `Aguarde um momento, vou encaminhar seu atendimento para o suporte.`;
         
         if (userName) {
-            // Usa o nome capturado e formata
-            formattedUserName = userName.split(' ')[0]; // Pega só o primeiro nome
-            formattedUserName = formattedUserName.charAt(0).toUpperCase() + formattedUserName.slice(1).toLowerCase();
-        }
-        
-        // Formata a resposta com o nome capturado
-        const responseText = `Certo, ${formattedUserName}.
+            // Usa o nome capturado e formata (apenas o primeiro nome)
+            const firstName = userName.split(' ')[0];
+            const formattedFirstName = firstName.charAt(0).toUpperCase() + firstName.slice(1).toLowerCase();
+            
+            responseText = `Certo, ${formattedFirstName}.
         
 Aguarde um momento, vou encaminhar seu atendimento para o suporte.`;
-
+        }
+        
         // Envia a resposta final
         response.fulfillmentText = responseText;
         
@@ -233,8 +253,6 @@ Aguarde um momento, vou encaminhar seu atendimento para o suporte.`;
     // ----------------------------------------------------------------
     // 2. FLUXO DE TUTORIAIS
     // ----------------------------------------------------------------
-    // ... (O restante da sua lógica de tutoriais permanece INALTERADA)
-    // ...
 
     // SAMSUNG / LG (FLUXO DIRETO)
     } else if (intentName === "TUTORIAL SMARTV") {
@@ -251,7 +269,7 @@ Aguarde um momento, vou encaminhar seu atendimento para o suporte.`;
     // INTENT DE CONFIRMAÇÃO DO SISTEMA
     } else if (intentName === "Sistemas de Confirmação") { 
         
-        const lowerQuery = queryText.toLowerCase();
+        const lowerQuery = req.body.queryResult.queryText.toLowerCase();
 
         if (lowerQuery.includes('android') || lowerQuery.includes('google') || lowerQuery.includes('playstore') || lowerQuery.includes('triângulo') || lowerQuery.includes('apps google')) {
              fulfillmentMessages = getAndroidTVInstallTutorial(); 
