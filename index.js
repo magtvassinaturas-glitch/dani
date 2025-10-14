@@ -158,19 +158,19 @@ app.post('/webhook', (req, res) => {
 
 
     // ----------------------------------------------------------------
-    // 1. INTENÇÕES DO MENU PRINCIPAL (NOVO TRATAMENTO DE NOME/DELAY)
+    // 1. INTENÇÕES DO MENU PRINCIPAL (TRATAMENTO DE NOME E FLUXO)
     // ----------------------------------------------------------------
     if (intentName === "Menu Principal - N1") { 
         // Opção 1: Novo Cliente 
         
-        // Se o nome foi capturado, usa a saudação personalizada com delay E RETORNA
+        // Se o nome foi capturado na requisição, usa o nome na resposta
         if (userName) {
             
             // 1. Personaliza e formata o nome (apenas o primeiro nome, capitalizado)
             const firstName = userName.split(' ')[0];
             const formattedFirstName = firstName.charAt(0).toUpperCase() + firstName.slice(1).toLowerCase();
             
-            // 2. CRIA A RESPOSTA PERSONALIZADA (Com base na sua frase)
+            // 2. CRIA A RESPOSTA PERSONALIZADA
             fulfillmentMessages = mapToFulfillmentMessages([
                 `Que maravilha ${formattedFirstName}! Fico muito feliz que você queira fazer parte da família MAGTV! 🤩`,
                 `Deixa eu te contar um pouco sobre o nosso plano:`,
@@ -192,21 +192,22 @@ Você vai usar o serviço em SMARTV, ANDROIDTV ou Celular, e qual a marca do seu
             response.fulfillmentMessages = fulfillmentMessages;
             return res.json(response); 
 
-        } else {
-             // Caso a Intent seja chamada sem o nome (Fallback/Lógica Original)
-            fulfillmentMessages = mapToFulfillmentMessages([
-                `Ótimo!`,
-                `Então, nosso plano de assinatura é o **Mensal**, e custa apenas **R$ 30,00**.`,
-                `Ele inclui:
+        } 
+        
+        // Se NÃO há nome na requisição, segue a lógica genérica (Fallback)
+        fulfillmentMessages = mapToFulfillmentMessages([
+            `Ótimo!`,
+            `Então, nosso plano de assinatura é o **Mensal**, e custa apenas **R$ 30,00**.`,
+            `Ele inclui:
 - Mais de **2.000** canais abertos e fechados
 - Mais de **20 mil** filmes
 - Mais de **14 mil** séries e novelas
 - Animes e desenhos`,
-                `Você pode usar em **Smart TVs Samsung, LG, Roku** (via IPTV) e em dispositivos **Android** (celulares, TV Box, Android TV) através do nosso app exclusivo.`,
-                `⚠️ Importante: **não funciona em iOS** (iPhone/iPad).`,
-                `Você tem direito a 3 horas de teste grátis. Vamos começar?`
-            ]);
-        }
+            `Você pode usar em **Smart TVs Samsung, LG, Roku** (via IPTV) e em dispositivos **Android** (celulares, TV Box, Android TV) através do nosso app exclusivo.`,
+            `⚠️ Importante: **não funciona em iOS** (iPhone/iPad).`,
+            `Você tem direito a 3 horas de teste grátis. Vamos começar?`
+        ]);
+        
         
     } else if (intentName === "Menu Principal - N2 - select.number") { 
         // Opção 2: Pagamento 
@@ -229,6 +230,8 @@ Assim que você fizer o pagamento, me envie o comprovante, por favor! 😉`
             response.fulfillmentMessages = fulfillmentMessages;
             return res.json(response); // <-- RETORNO IMEDIATO APÓS A SAUDAÇÃO
         } 
+        
+        // Se a Intent for acionada sem nome, a resposta deve vir do Dialogflow (pedindo o nome).
         
     } else if (intentName === "Suporte - Nome Capturado") { 
         
@@ -282,8 +285,20 @@ Aguarde um momento, vou encaminhar seu atendimento para o suporte.`;
         }
 
 
+    // ----------------------------------------------------------------
     // 3. INTENÇÕES PADRÃO
+    // ----------------------------------------------------------------
     } else if (intentName === "Default Welcome Intent") {
+        
+        // ** AQUI ESTÁ A MUDANÇA: Verifica se o nome foi capturado no Welcome Intent **
+        if (userName) {
+             // Se o nome foi capturado (após o slot filling), envia a saudação personalizada e o menu.
+            fulfillmentMessages = getPersonalizedMenu(userName);
+            response.fulfillmentMessages = fulfillmentMessages;
+            return res.json(response); 
+        }
+        
+        // Lógica original (usada na primeira vez que o bot é acionado, antes da captura do nome)
         const greeting = getGreeting();
         response.fulfillmentText = `Olá! ${greeting}, Seja bem-vindo(a) à MAGTV! Meu nome é Dani.\n\nComo posso te ajudar hoje?\n1️⃣ Novo Cliente\n2️⃣ Pagamento\n3️⃣ Suporte`;
 
