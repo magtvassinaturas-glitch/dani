@@ -48,7 +48,6 @@ const getPersonalizedMenu = (nomeCliente) => {
     const indexAleatorio = Math.floor(Math.random() * frasesDani.length);
     let saudacao = frasesDani[indexAleatorio];
 
-    // Garante que apenas o primeiro nome seja formatado corretamente
     const nomeFormatado = nomeCliente.split(' ')[0].charAt(0).toUpperCase() + nomeCliente.split(' ')[0].slice(1).toLowerCase();
     saudacao = saudacao.replace('[Nome do Cliente]', nomeFormatado);
     
@@ -64,40 +63,66 @@ Como posso te ajudar hoje? Por favor, escolha uma das opções abaixo:
 };
 
 // =================================================================
-// FUNÇÕES REUTILIZÁVEIS PARA TUTORIAIS (Inalteradas)
+// FUNÇÕES REUTILIZÁVEIS PARA TUTORIAIS (RESTAURADAS COMPLETAS)
 // =================================================================
 
+// 1. TUTORIAL SMART TV (SAMSUNG / LG)
 const getSmartTVInstallTutorial = () => {
     const messages = [
         "📺 Como instalar o XCloud TV na sua TV",
+        "Siga as instruções abaixo para a marca da sua TV e comece a assistir.",
         "Passo a passo para TVs *Samsung e LG*.",
+        "1. Aperte o botão Home no controle remoto para abrir a tela principal.",
+        "2. Navegue até a loja de aplicativos (geralmente identificada por um ícone de sacola de compras ou uma lupa de busca).",
+        "3. Use o campo de pesquisa e digite *\"XCloud TV\"*.",
+        "4. Selecione o aplicativo e clique em *Instalar* (ou Baixar). Quando a instalação estiver concluída, clique em *Abrir*.",
+        "5. Agora é só inserir seu login e senha para acessar todo o conteúdo.",
         "Envie a palavra **TESTE** para enviarmos o seu acesso!"
     ];
     return mapToFulfillmentMessages(messages);
 };
 
+// 2. TUTORIAL ROKU (CONTEÚDO RESTAURADO)
 const getRokuInstallTutorial = () => {
     const messages = [
         "📺 Como instalar o XCloud TV na sua TV",
         "Passo a passo para *Sistema Roku TV*:",
+        "1. Aperte o botão Home no controle remoto 🎚",
+        "2. Vá até *Canais de Streaming* na tela principal.",
+        "3. Selecione a opção *Procurar Canais*.",
+        "4. No campo de busca, digite *\"XCloud TV\"*.",
+        "5. Selecione o aplicativo e clique em *Adicionar Canal*.",
+        "6. Aguarde a instalação e clique em *Ir para o canal*.",
         "Por fim, envie a palavra **TESTE** para enviarmos o seu login e senha!"
     ];
     return mapToFulfillmentMessages(messages);
 };
 
+// 3. TUTORIAL ANDROID TV / TV BOX (CONTEÚDO RESTAURADO)
 const getAndroidTVInstallTutorial = () => {
     const messages = [
         "📺 Tutorial para Android TV (TV Box)",
-        "No campo para digitar, coloque o código: **" + CODE_DOWNLOADER + "** e clique em Go.",
+        "1. Como Instalar o Aplicativo Rush One.",
+        "2. Na sua Android TV, acesse a *Play Store*.",
+        "3. Se for Google TV, a Play Store fica nas configurações na aba de apps!",
+        "4. Após abrir o Play Store, procure pelo aplicativo chamado *\"Downloader\"* e clique em *Instalar*.",
+        "5. Abra o aplicativo Downloader.",
+        "6. No campo para digitar, coloque o código: **" + CODE_DOWNLOADER + "** e clique em Go.",
+        "7. Se o aplicativo pedir, dê a permissão para o Downloader poder instalar o aplicativo.",
+        "* Aguarde a instalação ser concluída.",
         "Envie a palavra **TESTE** para enviarmos o seu acesso!"
     ];
     return mapToFulfillmentMessages(messages);
 };
 
+
+// 4. PERGUNTA DE DESAMBIGUAÇÃO (Marca Ambígüa)
 const getAmbiguousBrandQuestion = (marca) => {
     const messages = [
         `Certo, ${marca}! É uma marca excelente. 😉`,
-        `Me diz uma coisa: a tela inicial dela tem a loja de apps da Google ou o menu tem a opção 'Canais de Streaming'?`
+        `As TVs da ${marca} podem ter o sistema **Android TV** (ou Google TV) ou o sistema **Roku TV**.`,
+        `Para eu te ajudar com o tutorial exato, preciso saber qual o sistema da sua TV.`,
+        `Me diz uma coisa: a tela inicial dela tem a loja de apps da Google (o símbolo de um triângulo colorido do Play Store) ou o menu tem a opção 'Canais de Streaming' (com a logo do Roku)?`
     ];
     return mapToFulfillmentMessages(messages);
 };
@@ -120,11 +145,10 @@ app.post('/webhook', (req, res) => {
     if (nomeUserParam) {
         if (typeof nomeUserParam === 'string' && nomeUserParam.length > 0) {
             userName = nomeUserParam;
-        // ***** Extração reforçada para o formato { "name": "Davi" } E o formato { "displayName": "Davi" } *****
         } else if (typeof nomeUserParam === 'object') {
-            if (nomeUserParam.name) {
+            if (nomeUserParam.name) { // Formato JSON correto
                 userName = nomeUserParam.name;
-            } else if (nomeUserParam.displayName) {
+            } else if (nomeUserParam.displayName) { // Formato alternativo
                 userName = nomeUserParam.displayName;
             }
         }
@@ -139,11 +163,10 @@ app.post('/webhook', (req, res) => {
              // Se o nome foi capturado, envia a saudação personalizada e o menu.
             fulfillmentMessages = getPersonalizedMenu(userName);
             response.fulfillmentMessages = fulfillmentMessages;
-            // Retorna imediatamente. Se isso não funcionar, o problema é puramente no DXP.
             return res.json(response); 
         }
         
-        // Lógica estática SE O NOME NÃO FOI CAPTURADO (primeira vez que o bot fala)
+        // Lógica estática SE O NOME NÃO FOI CAPTURADO
         const greeting = getGreeting();
         response.fulfillmentText = `Olá! ${greeting}, Seja bem-vindo(a) à MAGTV! Meu nome é Dani.\n\nComo posso te ajudar hoje?\n1️⃣ Novo Cliente\n2️⃣ Pagamento\n3️⃣ Suporte`;
         
