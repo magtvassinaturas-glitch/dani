@@ -1,6 +1,7 @@
 const express = require('express');
+const bodyParser = require('body-parser'); // <--- CORREÇÃO DE AMBIENTE: ADICIONADO body-parser
 const app = express();
-app.use(express.json());
+app.use(bodyParser.json()); // <--- CORREÇÃO DE AMBIENTE: TROCADO express.json() por bodyParser.json()
 
 // CONFIGURAÇÕES DO BOT
 const PIX_KEY = "94 98444-5961";
