@@ -1,15 +1,14 @@
 const express = require('express');
+// Foi removido: const app = express(); app.use(express.json());
+// Substituído por:
 const bodyParser = require('body-parser'); 
-
-// 2. Configuração Inicial do Servidor
 const app = express();
-// Define a porta explicitamente a partir da variável de ambiente (Render/Glitch)
-const PORT = process.env.PORT || 3000; 
-
-// Middleware: Permite que o servidor entenda o formato JSON do Dialogflow
 app.use(bodyParser.json());
 
-// CONFIGURAÇÕES DO BOT (Mantidas do seu código original)
+// 2. Configuração Inicial do Servidor
+const PORT = process.env.PORT || 3000; 
+
+// CONFIGURAÇÕES DO BOT
 const PIX_KEY = "94 98444-5961";
 const PIX_NAME = "Davi Eduardo Borges";
 const PLAN_VALUE = "R$ 30,00";
@@ -17,7 +16,7 @@ const CODE_DOWNLOADER = "5977492"; // Seu código
 const SITE_RUSH = "https://rush.ninja/";
 
 // =================================================================
-// LISTA DE FRASES DA DANI (Mantidas do seu código original)
+// LISTA DE FRASES DA DANI (PARA ALEATORIEDADE E PERSONALIZAÇÃO)
 // =================================================================
 const frasesDani = [
     "Olá [Nome do Cliente]! Seja muito bem-vindo(a) à MAGTV! Meu nome é Dani. ", 
@@ -30,7 +29,7 @@ const frasesDani = [
 ];
 // =================================================================
 
-// Função para obter a saudação do dia (Mantida do seu código original)
+// Função para obter a saudação do dia
 function getGreeting() {
   const hour = new Date().getHours();
   if (hour >= 6 && hour < 12) {
@@ -42,7 +41,7 @@ function getGreeting() {
   }
 }
 
-// Mapeia o array de texto para o formato de mensagens do Dialogflow (Mantida do seu código original)
+// Mapeia o array de texto para o formato de mensagens do Dialogflow
 const mapToFulfillmentMessages = (messages) => {
     return messages.map(text => ({ text: { text: [text] } }));
 };
@@ -71,9 +70,10 @@ Como posso te ajudar hoje? Por favor, escolha uma das opções abaixo:
 };
 
 // =================================================================
-// FUNÇÕES REUTILIZÁVEIS PARA TUTORIAIS (Mantidas do seu código original)
+// FUNÇÕES REUTILIZÁVEIS PARA TUTORIAIS (Recuperadas e Completas)
 // =================================================================
 
+// 1. TUTORIAL SMART TV (SAMSUNG / LG)
 const getSmartTVInstallTutorial = () => {
     const messages = [
         "📺 Como instalar o XCloud TV na sua TV",
@@ -89,6 +89,7 @@ const getSmartTVInstallTutorial = () => {
     return mapToFulfillmentMessages(messages);
 };
 
+// 2. TUTORIAL ROKU
 const getRokuInstallTutorial = () => {
     const messages = [
         "📺 Como instalar o XCloud TV na sua TV",
@@ -104,6 +105,7 @@ const getRokuInstallTutorial = () => {
     return mapToFulfillmentMessages(messages);
 };
 
+// 3. TUTORIAL ANDROID TV / TV BOX
 const getAndroidTVInstallTutorial = () => {
     const messages = [
         "📺 Tutorial para Android TV (TV Box)",
@@ -121,6 +123,7 @@ const getAndroidTVInstallTutorial = () => {
 };
 
 
+// 4. PERGUNTA DE DESAMBIGUAÇÃO (Marca Ambígua)
 const getAmbiguousBrandQuestion = (marca) => {
     const messages = [
         `Certo, ${marca}! É uma marca excelente. 😉`,
@@ -138,7 +141,7 @@ const getAmbiguousBrandQuestion = (marca) => {
 app.post('/webhook', (req, res) => {
   try {
     const intentName = req.body.queryResult.intent.displayName;
-    const queryText = req.body.queryResult.queryText;
+    
     let response = {};
     let fulfillmentMessages = [];
 
@@ -149,7 +152,7 @@ app.post('/webhook', (req, res) => {
     // Procura o contexto 'sessao_cliente'
     const sessionContext = contexts.find(c => c.name.includes('/contexts/sessao_cliente'));
     
-    // Prioriza o nome salvo no contexto (sessao_cliente)
+    // Prioriza o nome salvo no contexto ('person' ou 'nomeuser')
     if (sessionContext && sessionContext.parameters) {
         if (sessionContext.parameters.person) {
             userName = sessionContext.parameters.person;
@@ -158,7 +161,7 @@ app.post('/webhook', (req, res) => {
         }
     }
 
-    // Se não achou no contexto, tenta pegar da INTENT atual (captura de nome)
+    // Se não achou no contexto, tenta pegar da INTENT atual
     if (!userName) {
         const nomeUserParam = req.body.queryResult.parameters['nomeuser'] || req.body.queryResult.parameters['person']; 
         if (nomeUserParam && typeof nomeUserParam === 'string' && nomeUserParam.length > 0) {
@@ -169,7 +172,8 @@ app.post('/webhook', (req, res) => {
 
 
     // =================================================================
-    // ***** LÓGICA DE SAUDAÇÃO INICIAL (Default Welcome Intent) *****
+    // ***** LÓGICA DE INTENTS (Estrutura ajustada com else if) *****
+    // Isso resolve o problema de conflito no fluxo e o erro 500.
     // =================================================================
     if (intentName === "Default Welcome Intent") {
         
@@ -180,13 +184,8 @@ app.post('/webhook', (req, res) => {
             const greeting = getGreeting();
             response.fulfillmentText = `Olá! ${greeting}, Seja bem-vindo(a) à MAGTV! Meu nome é Dani.\n\nComo posso te ajudar hoje?\n1️⃣ Novo Cliente\n2️⃣ Pagamento\n3️⃣ Suporte`;
         }
-    }
 
-
-    // ----------------------------------------------------------------
-    // 1. INTENÇÕES DO MENU PRINCIPAL (TRATAMENTO DE NOME E FLUXO)
-    // ----------------------------------------------------------------
-    if (intentName === "Menu Principal - N1") { 
+    } else if (intentName === "Menu Principal - N1") { 
         // Opção 1: Novo Cliente 
         
         if (userName) {
@@ -238,26 +237,25 @@ Assim que você fizer o pagamento, me envie o comprovante, por favor! 😉`
         ]);
 
     } else if (intentName === "Menu Principal - N3 - select.number") { 
-        // ***** OPÇÃO 3: SUPORTE (LÓGICA CORRIGIDA) *****
+        // ***** OPÇÃO 3: SUPORTE (LÓGICA DE PULAR PERGUNTA) *****
         
         if (userName) {
-            // SE O NOME FOI SALVO ANTES: Pula a pergunta e encaminha para o suporte.
+            // NOME SALVO: Pula a pergunta.
             const firstName = userName.split(' ')[0];
             const formattedFirstName = firstName.charAt(0).toUpperCase() + firstName.slice(1).toLowerCase();
             
             response.fulfillmentText = `Certo, ${formattedFirstName}. Aguarde um momento, vou encaminhar seu atendimento para o suporte.`;
             
         } else { 
-            // SE O NOME NÃO FOI SALVO: Deixa o Dialogflow usar o Slot Filling/Prompt para pedir o nome.
-            // Não retornamos fulfillmentText nem messages para permitir que o Prompt da Intent funcione.
+            // NOME NÃO SALVO: Deixa o Slot Filling da Intent N3 funcionar.
         } 
         
     } else if (intentName === "Suporte - Nome Capturado") { 
-        // Esta intent é acionada QUANDO O NOME É FINALMENTE CAPTURADO (Plano B)
+        // Plano B: Nome recém-capturado.
         
         let responseText = `Aguarde um momento, vou encaminhar seu atendimento para o suporte.`;
         
-        if (userName) { // 'userName' foi preenchido com o nome recém-capturado pelo Slot Filling
+        if (userName) { 
             const firstName = userName.split(' ')[0];
             const formattedFirstName = firstName.charAt(0).toUpperCase() + firstName.slice(1).toLowerCase();
             
@@ -270,10 +268,6 @@ Aguarde um momento, vou encaminhar seu atendimento para o suporte.`;
     } else if (intentName === "TESTE") {
         response.fulfillmentText = `Aguarde um momento...`;
 
-    // ----------------------------------------------------------------
-    // 2. FLUXO DE TUTORIAIS
-    // ----------------------------------------------------------------
-
     } else if (intentName === "TUTORIAL SMARTV") {
         fulfillmentMessages = getSmartTVInstallTutorial();
 
@@ -284,7 +278,7 @@ Aguarde um momento, vou encaminhar seu atendimento para o suporte.`;
         fulfillmentMessages = getAndroidTVInstallTutorial();
 
     } else if (intentName === "Sistemas de Confirmação") { 
-        
+        // Lógica de desambiguação
         const lowerQuery = req.body.queryResult.queryText.toLowerCase();
 
         if (lowerQuery.includes('android') || lowerQuery.includes('google') || lowerQuery.includes('playstore') || lowerQuery.includes('triângulo') || lowerQuery.includes('apps google')) {
@@ -297,18 +291,16 @@ Aguarde um momento, vou encaminhar seu atendimento para o suporte.`;
              response.fulfillmentText = "Não consegui identificar o sistema. Me diga apenas uma palavra: 'Android' ou 'Roku'?";
         }
 
-
-    // ----------------------------------------------------------------
-    // 3. INTENÇÕES PADRÃO (Fallback/Resto)
-    // ----------------------------------------------------------------
     } else if (intentName === "Default Fallback Intent") {
+        // Fallback
         response.fulfillmentText = `Desculpe, não entendi sua pergunta. Por favor, escolha uma das opções do menu principal (1️⃣ Novo Cliente, 2️⃣ Pagamento ou 3️⃣ Suporte) ou entre em contato com o suporte em nosso número de WhatsApp.`;
         
     } else {
+         // Último Catch-all
         response.fulfillmentText = `Desculpe, não entendi sua pergunta. Por favor, escolha uma das opções do menu principal (1️⃣ Novo Cliente, 2️⃣ Pagamento ou 3️⃣ Suporte) ou entre em contato com o suporte em nosso número de WhatsApp.`;
     }
 
-    // Lógica final de retorno: prioriza fulfillmentMessages (com delay)
+    // Lógica final de retorno
     if (fulfillmentMessages.length > 0) {
         response.fulfillmentMessages = fulfillmentMessages;
     } 
@@ -316,7 +308,7 @@ Aguarde um momento, vou encaminhar seu atendimento para o suporte.`;
     res.json(response);
 
   } catch (error) {
-    console.error("Erro na requisição: ", error);
+    console.error("Erro na requisição (Final): ", error);
     res.status(500).json({
       "fulfillmentText": `Ocorreu um erro na integração. Por favor, tente novamente.`
     });
