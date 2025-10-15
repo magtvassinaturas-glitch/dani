@@ -48,6 +48,7 @@ const getPersonalizedMenu = (nomeCliente) => {
     const indexAleatorio = Math.floor(Math.random() * frasesDani.length);
     let saudacao = frasesDani[indexAleatorio];
 
+    // Garante que apenas o primeiro nome seja formatado e usado
     const nomeFormatado = nomeCliente.split(' ')[0].charAt(0).toUpperCase() + nomeCliente.split(' ')[0].slice(1).toLowerCase();
     saudacao = saudacao.replace('[Nome do Cliente]', nomeFormatado);
     
@@ -63,7 +64,7 @@ Como posso te ajudar hoje? Por favor, escolha uma das opções abaixo:
 };
 
 // =================================================================
-// FUNÇÕES REUTILIZÁVEIS PARA TUTORIAIS (RESTAURADAS COMPLETAS)
+// FUNÇÕES REUTILIZÁVEIS PARA TUTORIAIS
 // =================================================================
 
 // 1. TUTORIAL SMART TV (SAMSUNG / LG)
@@ -82,7 +83,7 @@ const getSmartTVInstallTutorial = () => {
     return mapToFulfillmentMessages(messages);
 };
 
-// 2. TUTORIAL ROKU (CONTEÚDO RESTAURADO)
+// 2. TUTORIAL ROKU
 const getRokuInstallTutorial = () => {
     const messages = [
         "📺 Como instalar o XCloud TV na sua TV",
@@ -98,7 +99,7 @@ const getRokuInstallTutorial = () => {
     return mapToFulfillmentMessages(messages);
 };
 
-// 3. TUTORIAL ANDROID TV / TV BOX (CONTEÚDO RESTAURADO)
+// 3. TUTORIAL ANDROID TV / TV BOX
 const getAndroidTVInstallTutorial = () => {
     const messages = [
         "📺 Tutorial para Android TV (TV Box)",
@@ -138,38 +139,52 @@ app.post('/webhook', (req, res) => {
     let response = {};
     let fulfillmentMessages = [];
 
-    // Tenta capturar o nome do cliente usando o parâmetro 'nomeuser'
-    const nomeUserParam = req.body.queryResult.parameters['nomeuser']; 
+    // --- LÓGICA DE RECUPERAÇÃO DE NOME SALVO (GLOBAL) ---
+    // 1. Tenta capturar o nome do CONTEXTO de sessão de longa duração.
     let userName = null;
-
-    if (nomeUserParam) {
-        if (typeof nomeUserParam === 'string' && nomeUserParam.length > 0) {
-            userName = nomeUserParam;
-        } else if (typeof nomeUserParam === 'object') {
-            if (nomeUserParam.name) { // Formato JSON correto
-                userName = nomeUserParam.name;
-            } else if (nomeUserParam.displayName) { // Formato alternativo
-                userName = nomeUserParam.displayName;
-            }
+    const contexts = req.body.queryResult.outputContexts || req.body.queryResult.activeContexts || [];
+    
+    // Procura o contexto 'sessao_cliente'
+    const sessionContext = contexts.find(c => c.name.includes('/contexts/sessao_cliente'));
+    
+    // O nome na Welcome Intent pode ser salvo como 'person' ou 'nomeuser'. Buscamos ambos para robustez.
+    if (sessionContext && sessionContext.parameters) {
+        if (sessionContext.parameters.person) {
+            userName = sessionContext.parameters.person;
+        } else if (sessionContext.parameters.nomeuser) {
+            userName = sessionContext.parameters.nomeuser;
         }
     }
-    
+
+    // 2. Se não achou no contexto, tenta pegar da INTENT atual (seja Welcome ou Suporte - Nome Capturado)
+    if (!userName) {
+        const nomeUserParam = req.body.queryResult.parameters['nomeuser'] || req.body.queryResult.parameters['person']; 
+        if (nomeUserParam && typeof nomeUserParam === 'string' && nomeUserParam.length > 0) {
+            userName = nomeUserParam;
+        }
+    }
+    // ----------------------------------------------------
+
+
     // =================================================================
     // ***** LÓGICA DE SAUDAÇÃO INICIAL (Default Welcome Intent) *****
     // =================================================================
     if (intentName === "Default Welcome Intent") {
         
+        // Se o nome foi capturado (ou estava no contexto, ou veio na fala inicial)
         if (userName) {
-             // Se o nome foi capturado, envia a saudação personalizada e o menu.
+            // Se o nome foi capturado, envia a saudação personalizada e o menu.
             fulfillmentMessages = getPersonalizedMenu(userName);
             response.fulfillmentMessages = fulfillmentMessages;
-            return res.json(response); 
+            // IMPORTANTE: Deixa o fluxo terminar aqui para que a resposta do Webhook seja usada
+            // e para que o Contexto de Saída 'sessao_cliente' seja ativado pelo Dialogflow.
+            
+        } else {
+            // Lógica estática SE O NOME NÃO FOI CAPTURADO
+            const greeting = getGreeting();
+            response.fulfillmentText = `Olá! ${greeting}, Seja bem-vindo(a) à MAGTV! Meu nome é Dani.\n\nComo posso te ajudar hoje?\n1️⃣ Novo Cliente\n2️⃣ Pagamento\n3️⃣ Suporte`;
         }
-        
-        // Lógica estática SE O NOME NÃO FOI CAPTURADO
-        const greeting = getGreeting();
-        response.fulfillmentText = `Olá! ${greeting}, Seja bem-vindo(a) à MAGTV! Meu nome é Dani.\n\nComo posso te ajudar hoje?\n1️⃣ Novo Cliente\n2️⃣ Pagamento\n3️⃣ Suporte`;
-        
+        // O Webhook está LIGADO na Welcome Intent, então o JSON deve ser retornado no final.
     }
 
 
@@ -179,7 +194,7 @@ app.post('/webhook', (req, res) => {
     if (intentName === "Menu Principal - N1") { 
         // Opção 1: Novo Cliente 
         
-        // Se o nome está na requisição (veio via contexto), usa o nome na resposta
+        // Se o nome está no contexto (capturado na Welcome), usa o nome na resposta
         if (userName) {
             
             const firstName = userName.split(' ')[0];
@@ -202,25 +217,21 @@ app.post('/webhook', (req, res) => {
 Você vai usar o serviço em SMARTV, ANDROIDTV ou Celular, e qual a marca do seu dispositivo? Assim eu já te mando o tutorial certinho! 😉`
             ]);
             
-            response.fulfillmentMessages = fulfillmentMessages;
-            return res.json(response); 
-
-        } 
-        
-        // Lógica genérica se não há nome
-        fulfillmentMessages = mapToFulfillmentMessages([
-            `Ótimo!`,
-            `Então, nosso plano de assinatura é o **Mensal**, e custa apenas **R$ 30,00**.`,
-            `Ele inclui:
+        } else { 
+            // Lógica genérica se não há nome
+            fulfillmentMessages = mapToFulfillmentMessages([
+                `Ótimo!`,
+                `Então, nosso plano de assinatura é o **Mensal**, e custa apenas **R$ 30,00**.`,
+                `Ele inclui:
 - Mais de **2.000** canais abertos e fechados
 - Mais de **20 mil** filmes
 - Mais de **14 mil** séries e novelas
 - Animes e desenhos`,
-            `Você pode usar em **Smart TVs Samsung, LG, Roku** (via IPTV) e em dispositivos **Android** (celulares, TV Box, Android TV) através do nosso app exclusivo.`,
-            `⚠️ Importante: **não funciona em iOS** (iPhone/iPad).`,
-            `Você tem direito a 3 horas de teste grátis. Vamos começar?`
-        ]);
-        
+                `Você pode usar em **Smart TVs Samsung, LG, Roku** (via IPTV) e em dispositivos **Android** (celulares, TV Box, Android TV) através do nosso app exclusivo.`,
+                `⚠️ Importante: **não funciona em iOS** (iPhone/iPad).`,
+                `Você tem direito a 3 horas de teste grátis. Vamos começar?`
+            ]);
+        }
         
     } else if (intentName === "Menu Principal - N2 - select.number") { 
         // Opção 2: Pagamento 
@@ -233,22 +244,33 @@ Assim que você fizer o pagamento, me envie o comprovante, por favor! 😉`
         ]);
 
     } else if (intentName === "Menu Principal - N3 - select.number") { 
-        // Opção 3: Suporte 
+        // ***** OPÇÃO 3: SUPORTE (MODIFICADO) *****
         
-        // Se o nome foi capturado, usa a saudação personalizada e o menu (caso o fluxo volte aqui)
         if (userName) {
-            fulfillmentMessages = getPersonalizedMenu(userName);
-            response.fulfillmentMessages = fulfillmentMessages;
-            return res.json(response); 
+            // SE O NOME FOI SALVO ANTES: Pula a pergunta e encaminha para o suporte.
+            const firstName = userName.split(' ')[0];
+            const formattedFirstName = firstName.charAt(0).toUpperCase() + firstName.slice(1).toLowerCase();
+            
+            response.fulfillmentText = `Certo, ${formattedFirstName}. Aguarde um momento, vou encaminhar seu atendimento para o suporte.`;
+            
+            // IMPORTANTE: Se o Dialogflow detectar o fulfillmentText, ele NÃO ativa o Slot Filling.
+            // A Intent N3 deve ter o Webhook LIGADO e o campo de resposta de texto VAZIO.
+            
+        } else { 
+            // SE O NOME NÃO FOI SALVO: Permite que o Slot Filling (pergunta de nome) continue.
+            // Não retornamos nada aqui para que o Dialogflow use o Prompt definido na Intent.
+            // Se o Slot Filling falhar, a Intent Suporte - Nome Capturado será acionada.
         } 
+        // Se houver uma resposta na Intent N3, ela será usada se o Webhook não retornar nada.
         
     } else if (intentName === "Suporte - Nome Capturado") { 
+        // Esta intent é acionada QUANDO O NOME É FINALMENTE CAPTURADO (Plano B)
         
         let responseText = `Aguarde um momento, vou encaminhar seu atendimento para o suporte.`;
         
-        if (userName) {
+        if (userName) { // 'userName' foi preenchido com o nome recém-capturado pelo Slot Filling
             const firstName = userName.split(' ')[0];
-            const formattedFirstName = userName.charAt(0).toUpperCase() + userName.slice(1).toLowerCase();
+            const formattedFirstName = firstName.charAt(0).toUpperCase() + firstName.slice(1).toLowerCase();
             
             responseText = `Certo, ${formattedFirstName}.
 Aguarde um momento, vou encaminhar seu atendimento para o suporte.`;
@@ -317,7 +339,8 @@ app.get('/', (req, res) => {
     res.send('O bot está online e funcionando!');
 });
 
-const PORT = process.env.PORT || 3000;
+// A porta é definida pelo ambiente (como Glitch) ou 3000
+// É importante usar a constante PORT definida no topo.
 app.listen(PORT, () => {
   console.log(`Servidor rodando na porta ${PORT}`);
 });
