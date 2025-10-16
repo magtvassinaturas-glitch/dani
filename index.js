@@ -18,7 +18,7 @@ const frasesDani = [
     "Olá [Nome do Cliente]! Que bom que você veio! 😊 Eu sou a Dani, da MAGTV. ", 
     "Olá [Nome do Cliente]! Eu sou a Dani, atendente da MAGTV. É um prazer falar com você! 😊 ",
     "Uau! Que bom que você veio [Nome do Cliente]! Eu sou a Dani, a sua assistente na MAGTV! Estou super animada para te ajudar hoje! ",
-    "Ah, que ótimo te ver por aqui [Nome do Cliente]! Pode contar comigo, a Dani! Meu objetivo é deixar tudo mais fácil para você na MAGTV. ",
+    "Ah, que ótimo te ver por aqui [Nome do Cliente]! Pode contar comigo, a Dani! Meu objetivo é deixar tudo mais fácil para você na MAGTV! ",
     "Seja muito, muito bem-vindo(a) [Nome do Cliente]! Você está falando com a Dani, e eu cuido de tudo por aqui na MAGTV com o maior prazer! ",
     "Olá [Nome do Cliente]! É a Dani quem está te atendendo na MAGTV! É um prazer! "
 ];
@@ -116,7 +116,6 @@ const getAndroidTVInstallTutorial = () => {
     return mapToFulfillmentMessages(messages);
 };
 
-
 // 4. PERGUNTA DE DESAMBIGUAÇÃO (Marca Ambígüa)
 const getAmbiguousBrandQuestion = (marca) => {
     const messages = [
@@ -139,19 +138,18 @@ app.post('/webhook', (req, res) => {
     let response = {};
     let fulfillmentMessages = [];
 
-    // --- LÓGICA DE RECUPERAÇÃO DE NOME SALVO/PRESENTE ---
+    // --- LÓGICA DE RECUPERAÇÃO DE NOME SALVO/PRESENTE (ROBUSTA) ---
     let userName = null;
     const contexts = req.body.queryResult.outputContexts || req.body.queryResult.activeContexts || [];
     
-    // 1. Tenta pegar do contexto 'sessao_cliente' (Se já foi capturado antes)
+    // Tenta pegar do contexto 'sessao_cliente' (Prioridade 1: se o nome já foi capturado)
     const sessionContext = contexts.find(c => c.name.includes('/contexts/sessao_cliente'));
     if (sessionContext && sessionContext.parameters) {
-        // Prioriza a busca do nome no contexto
         userName = sessionContext.parameters.nomeuser || sessionContext.parameters.person;
     }
 
-    // 2. Tenta pegar da INTENT atual (Se acabou de ser capturado pelo Slot Filling)
-    if (!userName) {
+    // Tenta pegar da INTENT atual (Prioridade 2: se acabou de ser capturado)
+    if (!userName) { 
         const nomeUserParam = req.body.queryResult.parameters['nomeuser'] || req.body.queryResult.parameters['person']; 
         if (nomeUserParam) {
             // Lógica para lidar com tipos de retorno: string ou objeto
@@ -285,7 +283,7 @@ Assim que você fizer o pagamento, me envie o comprovante, por favor! 😉`
         
         if (userName) {
             const firstName = userName.split(' ')[0];
-            const formattedFirstName = userName.charAt(0).toUpperCase() + userName.slice(1).toLowerCase();
+            const formattedFirstName = firstName.charAt(0).toUpperCase() + firstName.slice(1).toLowerCase();
             
             responseText = `Certo, ${formattedFirstName}.
 Aguarde um momento, vou encaminhar seu atendimento para o suporte.`;
