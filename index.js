@@ -1,7 +1,7 @@
 const express = require('express');
-const bodyParser = require('body-parser'); // <--- CORREÇÃO DE AMBIENTE: ADICIONADO body-parser
+const bodyParser = require('body-parser'); // CORREÇÃO DE AMBIENTE: ADICIONADO body-parser
 const app = express();
-app.use(bodyParser.json()); // <--- CORREÇÃO DE AMBIENTE: TROCADO express.json() por bodyParser.json()
+app.use(bodyParser.json()); // CORREÇÃO DE AMBIENTE: TROCADO express.json() por bodyParser.json()
 
 // CONFIGURAÇÕES DO BOT
 const PIX_KEY = "94 98444-5961";
@@ -64,7 +64,7 @@ Como posso te ajudar hoje? Por favor, escolha uma das opções abaixo:
 };
 
 // =================================================================
-// FUNÇÕES REUTILIZÁVEIS PARA TUTORIAIS (RESTAURADAS COMPLETAS)
+// FUNÇÕES REUTILIZÁVEIS PARA TUTORIAIS
 // =================================================================
 
 // 1. TUTORIAL SMART TV (SAMSUNG / LG)
@@ -83,7 +83,7 @@ const getSmartTVInstallTutorial = () => {
     return mapToFulfillmentMessages(messages);
 };
 
-// 2. TUTORIAL ROKU (CONTEÚDO RESTAURADO)
+// 2. TUTORIAL ROKU
 const getRokuInstallTutorial = () => {
     const messages = [
         "📺 Como instalar o XCloud TV na sua TV",
@@ -99,7 +99,7 @@ const getRokuInstallTutorial = () => {
     return mapToFulfillmentMessages(messages);
 };
 
-// 3. TUTORIAL ANDROID TV / TV BOX (CONTEÚDO RESTAURADO)
+// 3. TUTORIAL ANDROID TV / TV BOX
 const getAndroidTVInstallTutorial = () => {
     const messages = [
         "📺 Tutorial para Android TV (TV Box)",
@@ -139,21 +139,62 @@ app.post('/webhook', (req, res) => {
     let response = {};
     let fulfillmentMessages = [];
 
-    // Tenta capturar o nome do cliente usando o parâmetro 'nomeuser'
-    const nomeUserParam = req.body.queryResult.parameters['nomeuser']; 
+    // --- LÓGICA DE RECUPERAÇÃO DE NOME SALVO/PRESENTE ---
     let userName = null;
+    const contexts = req.body.queryResult.outputContexts || req.body.queryResult.activeContexts || [];
+    
+    // 1. Tenta pegar do contexto 'sessao_cliente' (Se já foi capturado antes)
+    const sessionContext = contexts.find(c => c.name.includes('/contexts/sessao_cliente'));
+    if (sessionContext && sessionContext.parameters) {
+        // Prioriza a busca do nome no contexto
+        userName = sessionContext.parameters.nomeuser || sessionContext.parameters.person;
+    }
 
-    if (nomeUserParam) {
-        if (typeof nomeUserParam === 'string' && nomeUserParam.length > 0) {
-            userName = nomeUserParam;
-        } else if (typeof nomeUserParam === 'object') {
-            if (nomeUserParam.name) { // Formato JSON correto
+    // 2. Tenta pegar da INTENT atual (Se acabou de ser capturado pelo Slot Filling)
+    if (!userName) {
+        const nomeUserParam = req.body.queryResult.parameters['nomeuser'] || req.body.queryResult.parameters['person']; 
+        if (nomeUserParam) {
+            // Lógica para lidar com tipos de retorno: string ou objeto
+            if (typeof nomeUserParam === 'string' && nomeUserParam.length > 0) {
+                userName = nomeUserParam;
+            } else if (typeof nomeUserParam === 'object' && nomeUserParam.name) {
                 userName = nomeUserParam.name;
-            } else if (nomeUserParam.displayName) { // Formato alternativo
-                userName = nomeUserParam.displayName;
             }
         }
     }
+    
+    // =================================================================
+    // ***** BLOCO DE VALIDAÇÃO DE NOME CAPTURADO (MADEIRA FIX) *****
+    // =================================================================
+    const REJECTED_NAMES = ['madeira', 'teste', 'eu', 'sim', 'nao', 'olá', 'oi', 'bom dia', 'boa tarde', 'boa noite', 'ajuda', 'suporte', 'pix'];
+
+    if (userName && typeof userName === 'string') {
+        const normalizedName = userName.toLowerCase().trim();
+        
+        // 1. Rejeita nomes muito curtos (1 ou 2 letras)
+        if (normalizedName.length <= 2) {
+            userName = null;
+        } 
+        // 2. Rejeita palavras na lista proibida (verifica a primeira palavra do que foi dito)
+        else if (REJECTED_NAMES.includes(normalizedName.split(' ')[0])) {
+            userName = null;
+        } 
+    }
+    // *****************************************************************
+
+    // =================================================================
+    // ***** BLOCO DE CONTROLE: PAUSAR BOT (HANDOVER) *****
+    // ESTE BLOCO DEVE SER O PRIMEIRO A SER EXECUTADO APÓS AS VARIÁVEIS!
+    // =================================================================
+    const atendimentoHumanoContext = contexts.find(c => c.name.includes('/contexts/atendimento_humano'));
+
+    if (atendimentoHumanoContext) {
+        // Se o contexto 'atendimento_humano' estiver ativo (vindo da N1 ou N3),
+        // o bot retorna uma resposta vazia e se cala.
+        return res.json({}); 
+    }
+    // *****************************************************************
+    
     
     // =================================================================
     // ***** LÓGICA DE SAUDAÇÃO INICIAL (Default Welcome Intent) *****
@@ -163,22 +204,19 @@ app.post('/webhook', (req, res) => {
         if (userName) {
              // Se o nome foi capturado, envia a saudação personalizada e o menu.
             fulfillmentMessages = getPersonalizedMenu(userName);
-            response.fulfillmentMessages = fulfillmentMessages;
-            return res.json(response); 
+        } else {
+            // Lógica estática SE O NOME NÃO FOI CAPTURADO
+            const greeting = getGreeting();
+            response.fulfillmentText = `Olá! ${greeting}, Seja bem-vindo(a) à MAGTV! Meu nome é Dani.\n\nComo posso te ajudar hoje?\n1️⃣ Novo Cliente\n2️⃣ Pagamento\n3️⃣ Suporte`;
         }
-        
-        // Lógica estática SE O NOME NÃO FOI CAPTURADO
-        const greeting = getGreeting();
-        response.fulfillmentText = `Olá! ${greeting}, Seja bem-vindo(a) à MAGTV! Meu nome é Dani.\n\nComo posso te ajudar hoje?\n1️⃣ Novo Cliente\n2️⃣ Pagamento\n3️⃣ Suporte`;
-        
     }
 
 
     // ----------------------------------------------------------------
     // 1. INTENÇÕES DO MENU PRINCIPAL (TRATAMENTO DE NOME E FLUXO)
     // ----------------------------------------------------------------
-    if (intentName === "Menu Principal - N1") { 
-        // Opção 1: Novo Cliente 
+    else if (intentName === "Menu Principal - N1") { 
+        // Opção 1: Novo Cliente - O CONTEXTO 'atendimento_humano' DEVE SER ATIVADO NO DIALOGFLOW AQUI!
         
         // Se o nome está na requisição (veio via contexto), usa o nome na resposta
         if (userName) {
@@ -202,26 +240,22 @@ app.post('/webhook', (req, res) => {
                 `Para te ajudar com a instalação, preciso de uma informação rapidinha:
 Você vai usar o serviço em SMARTV, ANDROIDTV ou Celular, e qual a marca do seu dispositivo? Assim eu já te mando o tutorial certinho! 😉`
             ]);
-            
-            response.fulfillmentMessages = fulfillmentMessages;
-            return res.json(response); 
 
-        } 
-        
-        // Lógica genérica se não há nome
-        fulfillmentMessages = mapToFulfillmentMessages([
-            `Ótimo!`,
-            `Então, nosso plano de assinatura é o **Mensal**, e custa apenas **R$ 30,00**.`,
-            `Ele inclui:
+        } else { 
+            // Lógica genérica se não há nome
+            fulfillmentMessages = mapToFulfillmentMessages([
+                `Ótimo!`,
+                `Então, nosso plano de assinatura é o **Mensal**, e custa apenas **R$ 30,00**.`,
+                `Ele inclui:
 - Mais de **2.000** canais abertos e fechados
 - Mais de **20 mil** filmes
 - Mais de **14 mil** séries e novelas
 - Animes e desenhos`,
-            `Você pode usar em **Smart TVs Samsung, LG, Roku** (via IPTV) e em dispositivos **Android** (celulares, TV Box, Android TV) através do nosso app exclusivo.`,
-            `⚠️ Importante: **não funciona em iOS** (iPhone/iPad).`,
-            `Você tem direito a 3 horas de teste grátis. Vamos começar?`
-        ]);
-        
+                `Você pode usar em **Smart TVs Samsung, LG, Roku** (via IPTV) e em dispositivos **Android** (celulares, TV Box, Android TV) através do nosso app exclusivo.`,
+                `⚠️ Importante: **não funciona em iOS** (iPhone/iPad).`,
+                `Você tem direito a 3 horas de teste grátis. Vamos começar?`
+            ]);
+        }
         
     } else if (intentName === "Menu Principal - N2 - select.number") { 
         // Opção 2: Pagamento 
@@ -234,14 +268,16 @@ Assim que você fizer o pagamento, me envie o comprovante, por favor! 😉`
         ]);
 
     } else if (intentName === "Menu Principal - N3 - select.number") { 
-        // Opção 3: Suporte 
+        // Opção 3: Suporte - O CONTEXTO 'atendimento_humano' DEVE SER ATIVADO NO DIALOGFLOW AQUI!
         
         // Se o nome foi capturado, usa a saudação personalizada e o menu (caso o fluxo volte aqui)
         if (userName) {
-            fulfillmentMessages = getPersonalizedMenu(userName);
-            response.fulfillmentMessages = fulfillmentMessages;
-            return res.json(response); 
-        } 
+            const firstName = userName.split(' ')[0];
+            const formattedFirstName = firstName.charAt(0).toUpperCase() + firstName.slice(1).toLowerCase();
+            response.fulfillmentText = `Certo, ${formattedFirstName}. Aguarde um momento, vou encaminhar seu atendimento para o suporte.`;
+        } else {
+            response.fulfillmentText = `Aguarde um momento, vou encaminhar seu atendimento para o suporte.`;
+        }
         
     } else if (intentName === "Suporte - Nome Capturado") { 
         
@@ -258,7 +294,15 @@ Aguarde um momento, vou encaminhar seu atendimento para o suporte.`;
         response.fulfillmentText = responseText;
         
     } else if (intentName === "TESTE") {
-        response.fulfillmentText = `Aguarde um momento...`;
+        let responseText = `Aguarde um momento...`;
+        
+        if (userName) {
+            const firstName = userName.split(' ')[0];
+            const formattedFirstName = firstName.charAt(0).toUpperCase() + firstName.slice(1).toLowerCase();
+            responseText = `Excelente, ${formattedFirstName}! Meu atendente humano já está entrando em contato para enviar o seu acesso de teste. Pode aguardar!`;
+        }
+        response.fulfillmentText = responseText;
+
 
     // ----------------------------------------------------------------
     // 2. FLUXO DE TUTORIAIS
@@ -292,7 +336,38 @@ Aguarde um momento, vou encaminhar seu atendimento para o suporte.`;
     // 3. INTENÇÕES PADRÃO (Fallback/Resto)
     // ----------------------------------------------------------------
     } else if (intentName === "Default Fallback Intent") {
-        response.fulfillmentText = `Desculpe, não entendi sua pergunta. Por favor, escolha uma das opções do menu principal (1️⃣ Novo Cliente, 2️⃣ Pagamento ou 3️⃣ Suporte) ou entre em contato com o suporte em nosso número de WhatsApp.`;
+        
+        // Mensagem de desculpas + instrução
+        const fallbackMessage = `Desculpe, não entendi sua pergunta. Por favor, escolha uma das opções do menu principal (1️⃣ Novo Cliente, 2️⃣ Pagamento ou 3️⃣ Suporte) ou use o botão abaixo para falar com o suporte.`;
+        
+        // Define o texto principal
+        response.fulfillmentText = fallbackMessage; 
+        
+        // Define a mensagem rica com o botão (Suggestion Chip)
+        response.fulfillmentMessages = [
+            {
+                "text": {
+                    "text": [fallbackMessage]
+                }
+            },
+            {
+                // Este é o formato para Botões/Suggestion Chips no Dialogflow
+                "payload": {
+                    "richContent": [
+                        [
+                            {
+                                "type": "chips",
+                                "options": [
+                                    {
+                                        "text": "Falar com Suporte (3)" // Texto do botão
+                                    }
+                                ]
+                            }
+                        ]
+                    ]
+                }
+            }
+        ];
         
     } else {
         response.fulfillmentText = `Desculpe, não entendi sua pergunta. Por favor, escolha uma das opções do menu principal (1️⃣ Novo Cliente, 2️⃣ Pagamento ou 3️⃣ Suporte) ou entre em contato com o suporte em nosso número de WhatsApp.`;
