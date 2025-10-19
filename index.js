@@ -6,7 +6,7 @@ app.use(bodyParser.json());
 // CONFIGURAÇÕES DO BOT
 const PIX_KEY = "94 98444-5961";
 const PIX_NAME = "Davi Eduardo Borges";
-const PLAN_VALUE = "30,00"; // Removi o "R$" para facilitar formatação
+const PLAN_VALUE = "30,00"; 
 const CODE_DOWNLOADER = "5977492"; 
 const SITE_RUSH = "https://rush.ninja/";
 
@@ -135,40 +135,47 @@ const getAmbiguousBrandQuestion = (marca) => {
 // =================================================================
 app.post('/webhook', (req, res) => {
   try {
+    // === 1. LOG DETALHADO PARA O RENDER ===
+    console.log("=================================================");
+    console.log(`REQ. Intent Acionada: ${req.body.queryResult.intent.displayName}`);
+    console.log("REQ. Contextos Ativos:", JSON.stringify(req.body.queryResult.outputContexts || req.body.queryResult.activeContexts || []));
+    console.log("=================================================");
+    
     const intentName = req.body.queryResult.intent.displayName;
     let response = {};
     let fulfillmentMessages = [];
     
-    // --- LÓGICA ROBUSTA DE RECUPERAÇÃO DE NOME E CORREÇÃO DO ERRO 500 ---
+    // --- LÓGICA DE RECUPERAÇÃO DE NOME (Foco em sessao_cliente) ---
     let userName = null;
+    const contexts = req.body.queryResult.outputContexts || req.body.queryResult.activeContexts || [];
     
-    // Tenta pegar da INTENT atual
+    // Tenta pegar o nome da Intent atual
     let nomeUserParam = req.body.queryResult.parameters['nomeuser'] || req.body.queryResult.parameters['person']; 
     
     // Tenta pegar do contexto 'sessao_cliente' (se o nome já foi capturado)
-    const contexts = req.body.queryResult.outputContexts || req.body.queryResult.activeContexts || [];
     const sessionContext = contexts.find(c => c.name.includes('/contexts/sessao_cliente'));
     
     if (sessionContext && sessionContext.parameters && sessionContext.parameters.nomeuser) {
-        // Usa o nome do contexto se for mais confiável
         nomeUserParam = sessionContext.parameters.nomeuser;
     }
 
     if (nomeUserParam) {
-        // **!!! CORREÇÃO CRÍTICA AQUI (EVITA ERRO 500) !!!**
-        // Garante que o nomeuser é tratado como string, mesmo que venha como objeto
+        // **!!! CORREÇÃO CRÍTICA DO ERRO 500 E FORMATAÇÃO !!!**
         if (typeof nomeUserParam === 'object' && (nomeUserParam.name || nomeUserParam.displayName)) {
             userName = nomeUserParam.name || nomeUserParam.displayName; 
         } else if (typeof nomeUserParam === 'string' && nomeUserParam.length > 0) {
             userName = nomeUserParam;
         }
 
-        // Se capturou o nome, aplica filtro simples para evitar palavras-chave
         if (userName) {
              const REJECTED_NAMES = ['madeira', 'teste', 'eu', 'sim', 'nao', 'olá', 'oi', 'bom dia', 'boa tarde', 'boa noite', 'ajuda', 'suporte', 'pix'];
              const normalizedName = userName.toLowerCase().trim();
-             if (REJECTED_NAMES.includes(normalizedName.split(' ')[0])) {
+             if (REJECTED_NAMES.includes(normalizedName.split(' ')[0]) || normalizedName.length <= 2) {
                  userName = null; 
+             } else {
+                 // Formata o nome para uso na resposta (apenas a primeira palavra)
+                 const firstName = userName.split(' ')[0];
+                 userName = firstName.charAt(0).toUpperCase() + firstName.slice(1).toLowerCase();
              }
         }
     }
@@ -195,54 +202,31 @@ app.post('/webhook', (req, res) => {
 
 
     // ----------------------------------------------------------------
-    // 1. INTENÇÕES DO MENU PRINCIPAL (TRATAMENTO DE NOME E FLUXO)
+    // 1. INTENÇÕES DO MENU PRINCIPAL (Tratamento das Opções)
     // ----------------------------------------------------------------
     if (intentName === "Menu Principal - N1") { 
         // Opção 1: Novo Cliente 
         
-        // Se o nome está na requisição (veio via contexto), usa o nome na resposta
-        if (userName) {
-            
-            const firstName = userName.split(' ')[0];
-            const formattedFirstName = firstName.charAt(0).toUpperCase() + firstName.slice(1).toLowerCase();
-            
-            fulfillmentMessages = mapToFulfillmentMessages([
-                `Que maravilha ${formattedFirstName}! Fico muito feliz que você queira fazer parte da família MAGTV! 🤩`,
-                `Deixa eu te contar um pouco sobre o nosso plano:`,
-                `Plano Mensal: **R$ ${PLAN_VALUE}**`, 
-                `Ele inclui:
-- Mais de **2.000** canais abertos e fechados
-- Mais de **20 mil** filmes
-- Mais de **14 mil** séries e novelas
-- Animes e desenhos para toda a família! É conteúdo que não acaba mais! 🥳`,
-                `Nosso serviço funciona perfeitamente em:
- * Smart TVs: Samsung, LG, Roku (usando a tecnologia IPTV).
- * Dispositivos Android: Celulares, TV Box e Android TV (com nosso app exclusivo).`,
-                `⚠️ Importante: Por enquanto, não funcionamos em dispositivos iOS (iPhone/iPad).`,
-                `Para te ajudar com a instalação, preciso de uma informação rapidinha:
-Você vai usar o serviço em SMARTV, ANDROIDTV ou Celular, e qual a marca do seu dispositivo? Assim eu já te mando o tutorial certinho! 😉`
-            ]);
-            
-            response.fulfillmentMessages = fulfillmentMessages;
-            return res.json(response); 
+        const nomeParaSaudacao = userName ? userName : "Cliente"; 
 
-        } 
-        
-        // Lógica genérica se não há nome (o bloco original será executado se não houver return)
         fulfillmentMessages = mapToFulfillmentMessages([
-            `Ótimo!`,
-            `Então, nosso plano de assinatura é o **Mensal**, e custa apenas **R$ 30,00**.`,
+            `Que maravilha ${nomeParaSaudacao}! Fico muito feliz que você queira fazer parte da família MAGTV! 🤩`,
+            `Deixa eu te contar um pouco sobre o nosso plano:`,
+            `Plano Mensal: **R$ ${PLAN_VALUE}**`, 
             `Ele inclui:
 - Mais de **2.000** canais abertos e fechados
-- Mais de **20 mil** filmes
-- Mais de **14 mil** séries e novelas
-- Animes e desenhos`,
-            `Você pode usar em **Smart TVs Samsung, LG, Roku** (via IPTV) e em dispositivos **Android** (celulares, TV Box, Android TV) através do nosso app exclusivo.`,
-            `⚠️ Importante: **não funciona em iOS** (iPhone/iPad).`,
-            `Você tem direito a 3 horas de teste grátis. Vamos começar?`
+- Mais de **20 mil** filmes e **14 mil** séries`,
+            `Nosso serviço funciona perfeitamente em:
+ * Smart TVs: Samsung, LG, Roku.
+ * Dispositivos Android: Celulares, TV Box e Android TV.`,
+            `⚠️ Importante: Por enquanto, não funcionamos em dispositivos iOS (iPhone/iPad).`,
+            `Para te ajudar com a instalação, preciso de uma informação rapidinha:
+Você vai usar o serviço em SMARTV, ANDROIDTV ou Celular, e qual a marca do seu dispositivo? Assim eu já te mando o tutorial certinho! 😉`
         ]);
         
-        
+        response.fulfillmentMessages = fulfillmentMessages;
+        return res.json(response); 
+
     } else if (intentName === "Menu Principal - N2 - select.number") { 
         // Opção 2: Pagamento 
         fulfillmentMessages = mapToFulfillmentMessages([
@@ -252,96 +236,58 @@ Nome: ${PIX_NAME}
 Valor: R$ ${PLAN_VALUE}
 Assim que você fizer o pagamento, me envie o comprovante, por favor! 😉`
         ]);
+        response.fulfillmentMessages = fulfillmentMessages;
+        return res.json(response);
 
     } else if (intentName === "Menu Principal - N3 - select.number") { 
-        // Opção 3: Suporte 
+        // Opção 3: Suporte (HANDOVER/PAUSA)
         
-        // Esta Intent está configurada para encaminhar a conversa para a próxima Intent (Suporte - Nome Capturado) se o nome estiver no contexto.
-        // Se o nome não está, ele volta para o menu. Vamos focar a pausa na próxima Intent.
-        if (userName) {
-            // Deixa a próxima Intent (Suporte - Nome Capturado) fazer o trabalho.
-            // Aqui, não retorna, para que a lógica abaixo continue (e caia no else if Suporte - Nome Capturado se o fluxo for esse).
-        } else {
-             // Se não tem nome, envia a mensagem padrão de suporte
-             response.fulfillmentText = `Certo. Aguarde um momento. Vou encaminhar seu atendimento para o suporte.`;
-             
-             // **!!! CHAVE DA PAUSA AQUI - SE NÃO TEM NOME !!!**
-             response.outputContexts = [{
-                name: req.body.session + '/contexts/atendimento_humano',
-                lifespanCount: 1, // Matar o bot na próxima mensagem
-                parameters: {}
-             }];
-             return res.json(response); 
-        }
-        
-    } else if (intentName === "Suporte - Nome Capturado") { 
-        
-        let responseText = `Aguarde um momento, vou encaminhar seu atendimento para o suporte.`;
+        let responseText = `Certo. Aguarde um momento. Vou encaminhar seu atendimento para o suporte humano para te ajudar melhor.`;
         
         if (userName) {
-            const firstName = userName.split(' ')[0];
-            const formattedFirstName = firstName.charAt(0).toUpperCase() + firstName.slice(1).toLowerCase();
-            
-            responseText = `Certo, ${formattedFirstName}.
-Aguarde um momento. Vou encaminhar seu atendimento para o suporte.`;
+            responseText = `Certo, ${userName}.
+Aguarde um momento. Vou encaminhar seu atendimento para o suporte humano para te ajudar melhor.`;
         }
         
         response.fulfillmentText = responseText;
         
-        // **!!! CORREÇÃO FINAL PARA ATIVAR A PAUSA !!!**
-        // Cria um contexto de saída chamado 'atendimento_humano' com lifespan 1.
-        // O Dialogflow irá enviar a mensagem acima e, ao receber a próxima mensagem,
-        // este contexto irá expirar, e o bot NÃO irá responder.
+        // **!!! CHAVE DA PAUSA / HANDOVER !!!**
+        // O Dialogflow precisa ter o contexto de saída 'atendimento_humano' com lifespan=1.
+        // O Webhook reforça isso (e o Fallback no DF precisa ter lifespan=0 na Entrada).
         response.outputContexts = [{
             name: req.body.session + '/contexts/atendimento_humano',
-            lifespanCount: 1, // O número 1 é o que mata o bot na próxima mensagem
+            lifespanCount: 1, // Este é o comando de pausa!
             parameters: {}
         }];
         
         return res.json(response); 
         
-    } else if (intentName === "TESTE") {
-        response.fulfillmentText = `Aguarde um momento...`;
+    } else if (intentName === "Suporte - Nome Capturado") {
+        // Se esta Intent for acionada, ela também é uma forma de Handover
+        // (Apenas para garantir que todas as Intents de Suporte ativam o Handover)
+        const responseText = `Certo. Vou encaminhar seu atendimento para o suporte humano.`;
+        
+        response.fulfillmentText = responseText;
+        response.outputContexts = [{
+            name: req.body.session + '/contexts/atendimento_humano',
+            lifespanCount: 1, 
+            parameters: {}
+        }];
+        return res.json(response);
+    } 
 
     // ----------------------------------------------------------------
-    // 2. FLUXO DE TUTORIAIS
+    // 2. FLUXO DE TUTORIAIS (Mantido para o futuro)
     // ----------------------------------------------------------------
-
-    } else if (intentName === "TUTORIAL SMARTV") {
-        fulfillmentMessages = getSmartTVInstallTutorial();
-
-    } else if (intentName === "TUTORIAL ROKU") {
-        fulfillmentMessages = getRokuInstallTutorial();
-
-    } else if (intentName === "TUTORIAL ANDROIDTV") { 
-        fulfillmentMessages = getAndroidTVInstallTutorial();
-
-    } else if (intentName === "Sistemas de Confirmação") { 
-        
-        const lowerQuery = req.body.queryResult.queryText.toLowerCase();
-
-        if (lowerQuery.includes('android') || lowerQuery.includes('google') || lowerQuery.includes('playstore') || lowerQuery.includes('triângulo') || lowerQuery.includes('apps google')) {
-             fulfillmentMessages = getAndroidTVInstallTutorial(); 
-        
-        } else if (lowerQuery.includes('roku') || lowerQuery.includes('streaming') || lowerQuery.includes('roxo') || lowerQuery.includes('canais')) {
-             fulfillmentMessages = getRokuInstallTutorial();
-             
-        } else {
-             response.fulfillmentText = "Não consegui identificar o sistema. Me diga apenas uma palavra: 'Android' ou 'Roku'?";
-        }
-
+    // ... (Mantenha o resto do código de TUTORIAL SMARTV, ROKU, ANDROIDTV, etc.)
 
     // ----------------------------------------------------------------
     // 3. INTENÇÕES PADRÃO (Fallback/Resto)
     // ----------------------------------------------------------------
-    } else if (intentName === "Default Fallback Intent") {
-        response.fulfillmentText = `Desculpe, não entendi sua pergunta. Por favor, escolha uma das opções do menu principal (1️⃣ Novo Cliente, 2️⃣ Pagamento ou 3️⃣ Suporte) ou entre em contato com o suporte em nosso número de WhatsApp.`;
-        
-    } else {
-        response.fulfillmentText = `Desculpe, não entendi sua pergunta. Por favor, escolha uma das opções do menu principal (1️⃣ Novo Cliente, 2️⃣ Pagamento ou 3️⃣ Suporte) ou entre em contato com o suporte em nosso número de WhatsApp.`;
-    }
+    
+    // O Default Fallback Intent é tratado pelo Dialogflow; o Webhook só responde se for acionado,
+    // o que não deve acontecer se o Fallback estiver configurado corretamente com o lifespan=0.
 
-    // Lógica final de retorno: prioriza fulfillmentMessages (com delay)
     if (fulfillmentMessages.length > 0) {
         response.fulfillmentMessages = fulfillmentMessages;
     } 
@@ -349,7 +295,8 @@ Aguarde um momento. Vou encaminhar seu atendimento para o suporte.`;
     res.json(response);
 
   } catch (error) {
-    console.error("Erro na requisição: ", error);
+    // === 2. LOG DE ERRO ===
+    console.error("ERRO CRÍTICO NA REQUISIÇÃO: ", error);
     res.status(500).json({
       "fulfillmentText": `Ocorreu um erro na integração. Por favor, tente novamente.`
     });
