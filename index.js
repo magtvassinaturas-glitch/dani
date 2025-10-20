@@ -29,75 +29,75 @@ const frasesDani = [
 const vendasDani = [
     // Variação 1
     (formattedFirstName, PLAN_VALUE) => [
-        `Que maravilha, ${formattedFirstName}! Fico muito feliz que você queira fazer parte da família MAGTV! 🥳`,
+        `Que maravilha, [Nome do Cliente]! Fico muito feliz que você queira fazer parte da família MAGTV! 🥳`,
         `Deixa eu te contar um pouco sobre o nosso plano: O **Mensal** custa apenas **R$ ${PLAN_VALUE}**.`,
         `Ele inclui acesso a mais de **2.000 canais**, **20 mil filmes**, **16 mil séries** e desenhos para toda a família! É conteúdo que não acaba mais! 🚀`,
         `Compatibilidade: Funciona perfeitamente em Smart TVs (Samsung, LG, Roku via IPTV) e dispositivos Android (Celulares, TV Box, Android TV) com nosso app exclusivo.`,
         `⚠️ Importante: *Não funciona em iOS* (iPhone/iPad).`,
-        `Para te ajudar com a instalação, preciso de uma informação rapidinha: Você vai usar o serviço em SMARTV, ANDROIDTV ou Celular, e qual a marca do seu dispositivo, ${formattedFirstName}? Assim eu já te mando o tutorial certinho! 😉`
+        `Para te ajudar com a instalação, preciso de uma informação rapidinha: Você vai usar o serviço em SMARTV, ANDROIDTV, ROKU TV ou Celular [Nome do Cliente]? Assim eu já te mando o tutorial certinho! 😉`
     ],
     // Variação 2
     (formattedFirstName, PLAN_VALUE) => [
-        `Uau! Ótima escolha, ${formattedFirstName}! É um prazer ter você!`,
+        `Uau! Ótima escolha, [Nome do Cliente]! É um prazer ter você!`,
         `Nosso plano de assinatura é o **Mensal**, por um valor fixo de **R$ ${PLAN_VALUE}** (sem surpresas!).`,
         `O que você leva? Um catálogo completo com mais de **2.000 canais**, além de **20.000 filmes** e **16.000 séries** atualizadas semanalmente.`,
         `Onde você pode usar? Em qualquer Smart TV compatível (Samsung, LG, Roku) e todos os Androids (TV Box, Celular) usando a tecnologia P2P do nosso app.`,
         `🛑 Aviso: O serviço **não é compatível com aparelhos iOS** (iPhone/iPad).`,
-        `Pronto para o teste? Antes, preciso saber: Qual a marca do seu dispositivo, ${formattedFirstName}? Assim já te envio o tutorial exato! 📺`
+        `Pronto para o teste? Antes, preciso saber: Qual a marca do seu dispositivo, [Nome do Cliente] Assim já te envio o tutorial exato! 📺`
     ],
     // Variação 3
     (formattedFirstName, PLAN_VALUE) => [
-        `Seja muito bem-vindo(a), ${formattedFirstName}! Você acaba de tomar a melhor decisão! 😎`,
+        `Seja muito bem-vindo(a), [Nome do Cliente]! Você acaba de tomar a melhor decisão! 😎`,
         `Nosso plano é super simples: **Mensal** e acessível, apenas **R$ ${PLAN_VALUE}**.`,
         `Com esse valor, você libera um universo de mais de **2.000 canais** e milhares de filmes/séries (**20 mil** filmes e **16 mil** séries!).`,
-        `A instalação é fácil na sua Smart TV (LG/Samsung/Roku) e em qualquer dispositivo Android (TV Box, Google TV, Celular) com nosso app.`,
+        `A instalação é fácil na sua Smart TV (LG/Samsung/Roku) e em qualquer dispositivo Android (TV Box, Google TV ou Celular) com nosso app.`,
         `Lembrete: **iOS está fora**! Não funciona em iPhone ou iPad.`,
-        `Para começar seu teste, me diga: Qual a marca do seu dispositivo, ${formattedFirstName}? Vou te mandar o tutorial completo! 😉`
+        `Para começar seu teste, me diga: Qual a marca do seu dispositivo, [Nome do Cliente] Vou te mandar o tutorial completo! 😉`
     ],
     // Variação 4
     (formattedFirstName, PLAN_VALUE) => [
-        `Que alegria te atender, ${formattedFirstName}! Bem-vindo(a) à MAGTV!`,
+        `Que alegria te atender, [Nome do Cliente]! Bem-vindo(a) à MAGTV!`,
         `O nosso **Plano Mensal** é o mais vendido, custando somente **R$ ${PLAN_VALUE}**.`,
         `Conteúdo de sobra! São mais de **2.000 canais** + todo o acervo de streaming (filmes, séries, animes) que ultrapassa as **36 mil** opções.`,
         `Onde assistir? Em Smart TVs (via IPTV) ou no seu Android (Celular/Box) com o app exclusivo.`,
         `🚫 Atenção: O sistema **não roda em iOS** (iPhone/iPad).`,
-        `Vamos testar por 3 horas? Me informa a marca e o tipo do seu dispositivo (Smart TV, Android TV, Celular), ${formattedFirstName}? Te envio o guia na hora! 🥳`
+        `Vamos testar por 3 horas? Me informa a marca e o tipo do seu dispositivo (Smart TV, Android TV ou Celular), [Nome do Cliente]? Te envio o guia na hora! 🥳`
     ],
     // Variação 5
     (formattedFirstName, PLAN_VALUE) => [
-        `Fantástico, ${formattedFirstName}! Que bom ter você na nossa família Magtv!`,
+        `Fantástico, [Nome do Cliente]! Que bom ter você na nossa família Magtv!`,
         `Plano **Mensal** por apenas **R$ ${PLAN_VALUE}**. Valor único e sem fidelidade.`,
         `Você terá acesso total a mais de **2.000 canais**, **20 mil filmes** e **16 mil séries**! O tédio vai acabar!`,
         `Compatível com TVs Samsung, LG, Roku e todo o ecossistema Android (TV Box, Celular).`,
         `⚠️ Recado rápido: Usuários de **iOS (iPhone/iPad) não são suportados**.`,
-        `Para liberarmos seu teste, me diga, ${formattedFirstName}: Qual a marca e o modelo do dispositivo onde você vai instalar? Assim acerto no tutorial! 📺`
+        `Para liberarmos seu teste, me diga, [Nome do Cliente]: Qual a marca e o modelo do dispositivo onde você vai instalar? Assim acerto no tutorial! 📺`
     ],
     // Variação 6
     (formattedFirstName, PLAN_VALUE) => [
-        `Olá, ${formattedFirstName}! Sua escolha foi perfeita!`,
+        `Olá, [Nome do Cliente]! Sua escolha foi perfeita!`,
         `O plano que você busca é o **Mensal**, e ele custa apenas **R$ ${PLAN_VALUE}**.`,
         `A experiência é completa: São mais de **2.000 canais** e um catálogo atualizado com mais de **36 mil** títulos entre séries, filmes e desenhos!`,
         `Funciona em todas as Smart TVs (via IPTV) e dispositivos Android (com o nosso aplicativo P2P).`,
         `Não se esqueça: **Não há compatibilidade com iOS**.`,
-        `Me diga a marca do seu dispositivo, ${formattedFirstName}? Assim eu te ajudo a instalar o quanto antes! 😉`
+        `Me diga a marca do seu dispositivo, [Nome do Cliente]? Assim eu te ajudo a instalar o quanto antes! 😉`
     ],
     // Variação 7
     (formattedFirstName, PLAN_VALUE) => [
-        `Que ótimo, ${formattedFirstName}! Vamos começar a sua experiência MAGTV!`,
+        `Que ótimo, [Nome do Cliente]! Vamos começar a sua experiência MAGTV!`,
         `Nosso plano é o **Mensal**, e o investimento é de só **R$ ${PLAN_VALUE}**.`,
         `Pelo valor, você ganha acesso ilimitado a **2.000 canais** e ao acervo VOD (Vídeo On Demand) com **20 mil filmes** e **16 mil séries**.`,
         `O serviço é perfeito para Smart TVs (LG, Samsung) e qualquer ANDROIDTV, TV Box ou celular Android.`,
         `🚫 Por favor, note: O serviço **não suporta iOS** (iPhone/iPad).`,
-        `Para começar seu teste de 3 horas, ${formattedFirstName}, me informe qual a marca da sua TV ou dispositivo que você vai usar. É rapidinho! 🥳`
+        `Para começar seu teste de 3 horas, [Nome do Cliente], me informe qual a marca da sua TV ou dispositivo que você vai usar. É rapidinho! 🥳`
     ],
     // Variação 8
     (formattedFirstName, PLAN_VALUE) => [
-        `Boas-vindas, ${formattedFirstName}! Fico muito feliz que você nos escolheu!`,
+        `Boas-vindas, [Nome do Cliente]! Fico muito feliz que você nos escolheu!`,
         `O nosso plano **Mensal** tem um valor super atrativo: **R$ ${PLAN_VALUE}**.`,
         `Com isso, você tem a sua disposição mais de **2.000 canais** e um vasto catálogo de **20.000 filmes** e **16.000 séries** para maratonar!`,
         `Compatibilidade garantida em Smart TVs, TV Box e dispositivos Android.`,
         `⚠️ Alerta: **Não suportamos iOS** (iPhone/iPad).`,
-        `Vamos liberar as 3 horas de teste? Qual a marca e o tipo do seu dispositivo, ${formattedFirstName}? Preciso dessa info para te dar o tutorial certo! 📺`
+        `Vamos liberar as 3 horas de teste? Qual a marca e o tipo do seu dispositivo, [Nome do Cliente]? Preciso dessa info para te dar o tutorial certo! 📺`
     ]
 ];
 // =================================================================
