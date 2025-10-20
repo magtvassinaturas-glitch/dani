@@ -24,6 +24,7 @@ const frasesDani = [
 ];
 // =================================================================
 // LISTA DE VARIAÇÕES PARA O PITCH DE VENDAS (MENU PRINCIPAL - N1)
+// Garantido em 8 variações.
 // =================================================================
 const vendasDani = [
     // Variação 1
@@ -161,7 +162,7 @@ const getVendasPitch = (nomeCliente, PLAN_VALUE) => {
     return mapToFulfillmentMessages(pitchMessages);
 };
 // =================================================================
-// FUNÇÕES REUTILIZÁVEIS PARA TUTORIAIS (RESTAURADAS COMPLETAS)
+// FUNÇÕES REUTILIZÁVEIS PARA TUTORIAIS 
 // =================================================================
 
 // 1. TUTORIAL SMART TV (SAMSUNG / LG)
@@ -213,8 +214,22 @@ const getAndroidTVInstallTutorial = () => {
     return mapToFulfillmentMessages(messages);
 };
 
+// 4. TUTORIAL CELULAR ANDROID (COM O SEU TEXTO ESPECÍFICO)
+const getAndroidCelularInstallTutorial = () => {
+    const messages = [
+        "📱 Tutorial para Celular Android",
+        "Como Instalar o Aplicativo P2P Rush Original", 
+        "* Abra o navegador Google Chrome no seu celular.",
+        `* Na barra de endereço, digite o seguinte site: ${SITE_RUSH}`,
+        "* Na página que abrir, encontre o aplicativo com o nome P2P Rush Original.", 
+        "* Clique no botão Baixar e aguarde o download.",
+        "* Quando o download terminar, clique no arquivo baixado para instalar o aplicativo. Se for a primeira vez, pode ser que o celular peça permissão para instalar de fontes desconhecidas; basta aceitar.",
+        "Aguarde um momento para criar seu Acesso!"
+    ];
+    return mapToFulfillmentMessages(messages);
+};
 
-// 4. PERGUNTA DE DESAMBIGUAÇÃO (Marca Ambígüa)
+// 5. PERGUNTA DE DESAMBIGUAÇÃO (Marca Ambígüa)
 const getAmbiguousBrandQuestion = (marca) => {
     const messages = [
         `Certo, ${marca}! É uma marca excelente. 😉`,
@@ -244,9 +259,9 @@ app.post('/webhook', (req, res) => {
         if (typeof nomeUserParam === 'string' && nomeUserParam.length > 0) {
             userName = nomeUserParam;
         } else if (typeof nomeUserParam === 'object') {
-            if (nomeUserParam.name) { // Formato JSON correto
+            if (nomeUserParam.name) { 
                 userName = nomeUserParam.name;
-            } else if (nomeUserParam.displayName) { // Formato alternativo
+            } else if (nomeUserParam.displayName) { 
                 userName = nomeUserParam.displayName;
             }
         }
@@ -277,31 +292,20 @@ app.post('/webhook', (req, res) => {
     if (intentName === "Menu Principal - N1") { 
         // Opção 1: Novo Cliente 
         
-        // Se o nome está na requisição (veio via contexto), usa a variação de pitch aleatória
-        if (userName) {
-            
-            fulfillmentMessages = getVendasPitch(userName, PLAN_VALUE);
-            
-            response.fulfillmentMessages = fulfillmentMessages;
-            return res.json(response); 
-
-        } 
+        // --- LÓGICA CORRIGIDA: SEMPRE USA O PITCH ALEATÓRIO (8 VARIAÇÕES) ---
+        let nomeParaPitch = userName;
         
-        // Lógica genérica se não há nome (Mantida simples, mas formatada)
-        fulfillmentMessages = mapToFulfillmentMessages([
-            `Que maravilha! Fico muito feliz que você queira fazer parte da família MAGTV! 🥳`,
-            `Então, nosso plano de assinatura é o **Mensal**, e custa apenas **R$ ${PLAN_VALUE}**.`,
-            `Ele inclui:
-- Mais de **2.000** canais abertos e fechados
-- Mais de **20 mil** filmes
-- Mais de **14 mil** séries e novelas
-- Animes e desenhos`,
-            `Você pode usar em **Smart TVs Samsung, LG, Roku** (via IPTV) e em dispositivos **Android** (celulares, TV Box, Android TV) através do nosso app exclusivo.`,
-            `⚠️ Importante: **não funciona em iOS** (iPhone/iPad).`,
-            `Para te ajudar com a instalação, preciso de uma informação rapidinha:
-qual é a marca do seu dispositivo? Assim eu já te mando o tutorial certinho! 😉`
-        ]);
+        // Se o nome não foi capturado, usamos um termo genérico, mas MANTEMOS A ALEATORIEDADE.
+        if (!nomeParaPitch) {
+             nomeParaPitch = "Amigo(a)"; 
+        }
         
+        // Força o uso da função de pitch aleatório
+        fulfillmentMessages = getVendasPitch(nomeParaPitch, PLAN_VALUE);
+            
+        response.fulfillmentMessages = fulfillmentMessages;
+        return res.json(response); 
+        // ------------------------------------------------------------------
         
     } else if (intentName === "Menu Principal - N2 - select.number") { 
         // Opção 2: Pagamento 
@@ -352,6 +356,9 @@ Aguarde um momento, vou encaminhar seu atendimento para o suporte.`;
 
     } else if (intentName === "TUTORIAL ANDROIDTV") { 
         fulfillmentMessages = getAndroidTVInstallTutorial();
+
+    } else if (intentName === "TUTORIAL CELULAR") { // INTENT CELULAR ADICIONADA AQUI
+        fulfillmentMessages = getAndroidCelularInstallTutorial();
 
     } else if (intentName === "Sistemas de Confirmação") { 
         
