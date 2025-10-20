@@ -256,39 +256,41 @@ app.post('/webhook', (req, res) => {
     const nomeUserParam = req.body.queryResult.parameters['nomeuser']; 
     let userName = null;
 
+    // --- LÓGICA DE EXTRAÇÃO DE NOME SIMPLIFICADA E ROBUSTA ---
     if (nomeUserParam) {
         if (typeof nomeUserParam === 'string' && nomeUserParam.length > 0) {
+            // Caso seja uma string simples (nome completo)
             userName = nomeUserParam;
-        } else if (typeof nomeUserParam === 'object') {
-            if (nomeUserParam.name) { 
-                userName = nomeUserParam.name;
-            } else if (nomeUserParam.displayName) { 
-                userName = nomeUserParam.displayName;
-            }
+        } else if (typeof nomeUserParam === 'object' && nomeUserParam.name) {
+            // Caso seja um objeto com a chave 'name' (padrão de entidade @sys.person)
+            userName = nomeUserParam.name;
+        } else if (typeof nomeUserParam === 'object' && nomeUserParam.displayName) {
+             // Caso seja um objeto com a chave 'displayName' (alguns formatos de context)
+            userName = nomeUserParam.displayName;
+        } else if (typeof nomeUserParam === 'object' && nomeUserParam.structValue && nomeUserParam.structValue.name) {
+             // Tentativa extra para formatos complexos
+             userName = nomeUserParam.structValue.name;
         }
     }
     
-    // CORREÇÃO FINAL: Tenta extrair o nome do contexto "sessao_cliente" se ele não foi capturado diretamente
+    // --- LÓGICA DE EXTRAÇÃO DE NOME DO CONTEXTO (FALLBACK) ---
+    // Procura o nome dentro de qualquer contexto que use 'nomeuser'
     if (!userName && req.body.queryResult.outputContexts) {
         const contexts = req.body.queryResult.outputContexts;
         for (const context of contexts) {
-            // Verifica o contexto principal que deve conter o nome.
-            if (context.name.includes('sessao-cliente') && context.parameters && context.parameters.nomeuser) {
+            if (context.parameters && context.parameters.nomeuser) {
                 
                 const contextNomeUser = context.parameters.nomeuser;
                 
-                // Re-utiliza a lógica de extração que trata strings e objetos de nome
                 if (typeof contextNomeUser === 'string' && contextNomeUser.length > 0) {
                     userName = contextNomeUser;
                     break; 
-                } else if (typeof contextNomeUser === 'object') {
-                    if (contextNomeUser.name) { 
-                        userName = contextNomeUser.name;
-                        break;
-                    } else if (contextNomeUser.displayName) { 
-                        userName = contextNomeUser.displayName;
-                        break;
-                    }
+                } else if (typeof contextNomeUser === 'object' && contextNomeUser.name) { 
+                    userName = contextNomeUser.name;
+                    break;
+                } else if (typeof contextNomeUser === 'object' && contextNomeUser.displayName) { 
+                    userName = contextNomeUser.displayName;
+                    break;
                 }
             }
         }
@@ -322,8 +324,8 @@ app.post('/webhook', (req, res) => {
         
         let nomeParaPitch = userName;
         
-        // Mantém o fallback de segurança APENAS para evitar que o pitch quebre caso
-        // o contexto falhe, mas o nome real deve ser carregado pela correção acima.
+        // Se a Intent falhar miseravelmente em passar o nome, usamos o "Cliente" 
+        // como segurança extrema, mas o nome do cliente deve ser usado.
         if (!nomeParaPitch) {
              nomeParaPitch = "Cliente"; 
         }
