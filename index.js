@@ -128,6 +128,7 @@ const getPersonalizedMenu = (nomeCliente) => {
     const indexAleatorio = Math.floor(Math.random() * frasesDani.length);
     let saudacao = frasesDani[indexAleatorio];
 
+    // Formata o nome para usar apenas o primeiro nome com a primeira letra maiúscula
     const nomeFormatado = nomeCliente.split(' ')[0].charAt(0).toUpperCase() + nomeCliente.split(' ')[0].slice(1).toLowerCase();
     saudacao = saudacao.replace('[Nome do Cliente]', nomeFormatado);
     
@@ -147,7 +148,7 @@ Como posso te ajudar hoje? Por favor, escolha uma das opções abaixo:
 // =================================================================
 const getVendasPitch = (nomeCliente, PLAN_VALUE) => {
     
-    // 1. Formata o primeiro nome do cliente
+    // 1. Formata o primeiro nome do cliente (Garantindo que mesmo que a Intent envie o nome completo, só o primeiro nome seja usado no pitch)
     const firstName = nomeCliente.split(' ')[0];
     const formattedFirstName = firstName.charAt(0).toUpperCase() + firstName.slice(1).toLowerCase();
 
@@ -162,7 +163,7 @@ const getVendasPitch = (nomeCliente, PLAN_VALUE) => {
     return mapToFulfillmentMessages(pitchMessages);
 };
 // =================================================================
-// FUNÇÕES REUTILIZÁVEIS PARA TUTORIAIS 
+// FUNÇÕES REUTILIZÁVEIS PARA TUTORIAIS (RESTAURADAS COMPLETAS)
 // =================================================================
 
 // 1. TUTORIAL SMART TV (SAMSUNG / LG)
@@ -252,20 +253,47 @@ app.post('/webhook', (req, res) => {
     let fulfillmentMessages = [];
 
     // Tenta capturar o nome do cliente usando o parâmetro 'nomeuser'
-    const nomeUserParam = req.body.queryResult.parameters['nomeuser'];
+    const nomeUserParam = req.body.queryResult.parameters['nomeuser']; 
     let userName = null;
 
     if (nomeUserParam) {
         if (typeof nomeUserParam === 'string' && nomeUserParam.length > 0) {
             userName = nomeUserParam;
         } else if (typeof nomeUserParam === 'object') {
-            if (nomeUserParam.name) {
+            if (nomeUserParam.name) { 
                 userName = nomeUserParam.name;
-            } else if (nomeUserParam.displayName) {
+            } else if (nomeUserParam.displayName) { 
                 userName = nomeUserParam.displayName;
             }
         }
     }
+    
+    // CORREÇÃO FINAL: Tenta extrair o nome do contexto "sessao_cliente" se ele não foi capturado diretamente
+    if (!userName && req.body.queryResult.outputContexts) {
+        const contexts = req.body.queryResult.outputContexts;
+        for (const context of contexts) {
+            // Verifica o contexto principal que deve conter o nome.
+            if (context.name.includes('sessao-cliente') && context.parameters && context.parameters.nomeuser) {
+                
+                const contextNomeUser = context.parameters.nomeuser;
+                
+                // Re-utiliza a lógica de extração que trata strings e objetos de nome
+                if (typeof contextNomeUser === 'string' && contextNomeUser.length > 0) {
+                    userName = contextNomeUser;
+                    break; 
+                } else if (typeof contextNomeUser === 'object') {
+                    if (contextNomeUser.name) { 
+                        userName = contextNomeUser.name;
+                        break;
+                    } else if (contextNomeUser.displayName) { 
+                        userName = contextNomeUser.displayName;
+                        break;
+                    }
+                }
+            }
+        }
+    }
+
     
     // =================================================================
     // ***** LÓGICA DE SAUDAÇÃO INICIAL (Default Welcome Intent) *****
@@ -276,7 +304,7 @@ app.post('/webhook', (req, res) => {
              // Se o nome foi capturado, envia a saudação personalizada e o menu.
             fulfillmentMessages = getPersonalizedMenu(userName);
             response.fulfillmentMessages = fulfillmentMessages;
-            return res.json(response);
+            return res.json(response); 
         }
         
         // Lógica estática SE O NOME NÃO FOI CAPTURADO
@@ -289,27 +317,24 @@ app.post('/webhook', (req, res) => {
     // ----------------------------------------------------------------
     // 1. INTENÇÕES DO MENU PRINCIPAL (TRATAMENTO DE NOME E FLUXO)
     // ----------------------------------------------------------------
-    if (intentName === "Menu Principal - N1") {
+    if (intentName === "Menu Principal - N1") { 
         // Opção 1: Novo Cliente 
         
         let nomeParaPitch = userName;
         
-        // Se a Intent anterior GARANTIR a captura de nome, este bloco só é 
-        // um "seguro" para evitar crash se a Intent anterior for pulada por erro.
+        // Mantém o fallback de segurança APENAS para evitar que o pitch quebre caso
+        // o contexto falhe, mas o nome real deve ser carregado pela correção acima.
         if (!nomeParaPitch) {
-             // Usaremos "Cliente" como fallback seguro, mas o Dialogflow
-             // deve garantir que o nome real seja enviado.
              nomeParaPitch = "Cliente"; 
         }
 
-        // --- FUNÇÃO DE PITCH ALEATÓRIO (SEMPRE EXECUTADA) ---
+        // Força o uso da função de pitch aleatório, que usa nomeParaPitch
         fulfillmentMessages = getVendasPitch(nomeParaPitch, PLAN_VALUE);
             
         response.fulfillmentMessages = fulfillmentMessages;
-        return res.json(response);
-        // ------------------------------------------------------------------
+        return res.json(response); 
         
-    } else if (intentName === "Menu Principal - N2 - select.number") {
+    } else if (intentName === "Menu Principal - N2 - select.number") { 
         // Opção 2: Pagamento 
         fulfillmentMessages = mapToFulfillmentMessages([
             `Para realizar o pagamento ou renovar, é só usar a chave PIX abaixo:
@@ -319,17 +344,17 @@ Valor: R$ ${PLAN_VALUE}
 Assim que você fizer o pagamento, me envie o comprovante, por favor! 😉`
         ]);
 
-    } else if (intentName === "Menu Principal - N3 - select.number") {
+    } else if (intentName === "Menu Principal - N3 - select.number") { 
         // Opção 3: Suporte 
         
         // Se o nome foi capturado, usa a saudação personalizada e o menu (caso o fluxo volte aqui)
         if (userName) {
             fulfillmentMessages = getPersonalizedMenu(userName);
             response.fulfillmentMessages = fulfillmentMessages;
-            return res.json(response);
+            return res.json(response); 
         } 
         
-    } else if (intentName === "Suporte - Nome Capturado") {
+    } else if (intentName === "Suporte - Nome Capturado") { 
         
         let responseText = `Aguarde um momento, vou encaminhar seu atendimento para o suporte.`;
         
@@ -356,18 +381,18 @@ Aguarde um momento, vou encaminhar seu atendimento para o suporte.`;
     } else if (intentName === "TUTORIAL ROKU") {
         fulfillmentMessages = getRokuInstallTutorial();
 
-    } else if (intentName === "TUTORIAL ANDROIDTV") {
+    } else if (intentName === "TUTORIAL ANDROIDTV") { 
         fulfillmentMessages = getAndroidTVInstallTutorial();
 
     } else if (intentName === "TUTORIAL CELULAR") { // INTENT CELULAR ADICIONADA AQUI
         fulfillmentMessages = getAndroidCelularInstallTutorial();
 
-    } else if (intentName === "Sistemas de Confirmação") {
+    } else if (intentName === "Sistemas de Confirmação") { 
         
         const lowerQuery = req.body.queryResult.queryText.toLowerCase();
 
         if (lowerQuery.includes('android') || lowerQuery.includes('google') || lowerQuery.includes('playstore') || lowerQuery.includes('triângulo') || lowerQuery.includes('apps google')) {
-             fulfillmentMessages = getAndroidTVInstallTutorial();
+             fulfillmentMessages = getAndroidTVInstallTutorial(); 
         
         } else if (lowerQuery.includes('roku') || lowerQuery.includes('streaming') || lowerQuery.includes('roxo') || lowerQuery.includes('canais')) {
              fulfillmentMessages = getRokuInstallTutorial();
