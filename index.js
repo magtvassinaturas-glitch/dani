@@ -83,7 +83,7 @@ const vendasDani = [
         `Conteúdo de sobra! São mais de **2.000 canais** + todo o acervo de streaming (filmes, séries, animes) que ultrapassa as **36 mil** opções.`,
         `Onde assistir? Em Smart TVs (via IPTV) ou no seu Android (Celular/Box) com o app exclusivo.`,
         `🚫 Atenção: O sistema **não roda em iOS** (iPhone/iPad).`,
-        `Vamos testar por 3 horas? Me informa a marca e o tipo do seu dispositivo (Smart TV, TV Box, Android TV, Roku TV Celular) ${formattedFirstName}. Te envio o guia na hora! 🥳`
+        `Vamos testar por 3 horas? Me informa a marca do seu dispositivo ${formattedFirstName}. Te envio o guia na hora! 🥳`
     ],
     // Variação 5
     (formattedFirstName, PLAN_VALUE) => [
@@ -92,7 +92,7 @@ const vendasDani = [
         `Você terá acesso total a mais de **2.000 canais**, **20 mil filmes** e **16 mil séries**! O tédio vai acabar!`,
         `Compatível com TVs Samsung, LG, Roku e todo o ecossistema Android (TV Box, Celular).`,
         `⚠️ Recado rápido: Usuários de **iOS (iPhone/iPad) não são suportados**.`,
-        `Para liberarmos seu teste, me diga ${formattedFirstName}: Qual a marca e o modelo do dispositivo onde você vai instalar? Assim acerto no tutorial! 📺`
+        `Para liberarmos seu teste, me diga ${formattedFirstName}: Qual a marca do dispositivo onde você vai instalar? Assim acerto no tutorial! 📺`
     ],
     // Variação 6
     (formattedFirstName, PLAN_VALUE) => [
@@ -119,7 +119,7 @@ const vendasDani = [
         `Com isso, você tem a sua disposição mais de **2.000 canais** e um vasto catálogo de **20.000 filmes** e **16.000 séries** para maratonar!`,
         `Compatibilidade garantida em Smart TVs, TV Box e dispositivos Android.`,
         `⚠️ Alerta: **Não suportamos iOS** (iPhone/iPad).`,
-        `Vamos liberar as 3 horas de teste? Qual a marca e o tipo do seu dispositivo, ${formattedFirstName}? Preciso dessa info para te dar o tutorial certo! 📺`
+        `Vamos liberar as 3 horas de teste? Qual a marca e o dispositivo onde vai testar ${formattedFirstName}? Preciso dessa info para te dar o tutorial certo! 📺`
     ]
 ];
 
