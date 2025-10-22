@@ -69,7 +69,7 @@ const vendasDani = [
     ],
     // Variação 3
     (formattedFirstName, PLAN_VALUE) => [
-        `Seja muito bem-vindo(a), ${formattedFirstName}! Você acaba de tomar a melhor decisão! 😎`,
+        ` ${formattedFirstName}! Você acaba de tomar a melhor decisão! 😎`,
         `Nosso plano é super simples: **Mensal** e acessível, apenas **R$ ${PLAN_VALUE}**.`,
         `Com esse valor, você libera um universo de mais de **2.000 canais** e milhares de filmes/séries (**20 mil** filmes e **16 mil** séries!).`,
         `A instalação é fácil na sua Smart TV (LG/Samsung/Roku) e em qualquer dispositivo Android (TV Box, Google TV, Celular) com nosso app.`,
@@ -78,7 +78,7 @@ const vendasDani = [
     ],
     // Variação 4
     (formattedFirstName, PLAN_VALUE) => [
-        `Que alegria te atender, ${formattedFirstName}! Bem-vindo(a) à MAGTV!`,
+        `Que alegria te atender, ${formattedFirstName}! vamos lá`,
         `O nosso **Plano Mensal** é o mais vendido, custando somente **R$ ${PLAN_VALUE}**.`,
         `Conteúdo de sobra! São mais de **2.000 canais** + todo o acervo de streaming (filmes, séries, animes) que ultrapassa as **36 mil** opções.`,
         `Onde assistir? Em Smart TVs (via IPTV) ou no seu Android (Celular/Box) com o app exclusivo.`,
@@ -96,7 +96,7 @@ const vendasDani = [
     ],
     // Variação 6
     (formattedFirstName, PLAN_VALUE) => [
-        `Olá, ${formattedFirstName}! Sua escolha foi perfeita!`,
+        `É isso ai, ${formattedFirstName}! Sua escolha foi perfeita!`,
         `O plano que você busca é o **Mensal**, e ele custa apenas **R$ ${PLAN_VALUE}**.`,
         `A experiência é completa: São mais de **2.000 canais** e um catálogo atualizado com mais de **36 mil** títulos entre séries, filmes e desenhos!`,
         `Funciona em todas as Smart TVs (via IPTV) e dispositivos Android (com o nosso aplicativo P2P).`,
@@ -245,8 +245,8 @@ const getAndroidCelularInstallTutorial = () => {
         "* Na página que abrir, encontre o aplicativo com o nome P2P Rush Original.", 
         "* Clique no botão Baixar e aguarde o download.",
         "* Quando o download terminar, clique no arquivo baixado para instalar o aplicativo. Se for a primeira vez, pode ser que o celular peça permissão para instalar de fontes desconhecidas; basta aceitar.",
-        "Aguarde um momento para criar seu Acesso!"
-    ];
+        "Após a instalação do app, digite **TESTE** para receber seu acesso!"
+    ]
     return mapToFulfillmentMessages(messages);
 };
 
