@@ -1,10 +1,10 @@
 const express = require('express');
-const bodyParser = require('body-parser'); 
+const bodyParser = require('body-parser');
 const app = express();
-app.use(bodyParser.json()); 
+app.use(bodyParser.json());
 
 // CONFIGURAÇÕES DO BOT
-const PIX_KEY = "94 98444-5961";
+const PIX_KEY = "magtvassinaturas@gmail.com";
 const PIX_NAME = "Davi Eduardo Borges";
 const PLAN_VALUE = "R$ 30,00";
 const CODE_DOWNLOADER = "6519181"; // Seu código
@@ -12,23 +12,32 @@ const SITE_RUSH = "https://rush.ninja/";
 
 // =================================================================
 // 1. FRASES DE PRIMEIRA SAUDAÇÃO (Pergunta o Nome - SEM DANI)
-//    > Será usada na "Default Welcome Intent" (Cumprimento Seco)
+//    > Usada na "Default Welcome Intent" (Cumprimento Seco em mensagens separadas)
 // =================================================================
 const frasesPrimeiraSaudacao = [
-    // O [GREETING] será o "Bom dia", "Boa tarde", etc.
-    (greeting) => `Olá! ${greeting}, Recebemos sua mensagem. Antes de prosseguir, me conta rapidinho: qual é o seu nome?`,
-    (greeting) => `Que bom ter você por aqui! ${greeting}. Agradecemos seu contato. Qual é o seu nome completo, por favor?`,
-    (greeting) => `E aí! Tudo certo? ${greeting}! Por gentileza, me diga seu nome completo para iniciarmos seu atendimento.`,
-    (greeting) => `Olá! ${greeting}. Qual o seu nome completo para eu dar prosseguimento ao seu chamado?`,
-    (greeting) => `Seja bem-vindo(a)! ${greeting}. Para que eu possa te ajudar, qual é o seu nome, por favor?`,
+    // Variação 1: Seu modelo
+    (greeting) => [
+        `Olá 👋 ${greeting}! Recebemos sua mensagem!`,
+        `Antes de prosseguir, me conta rapidinho: qual é o seu nome?`
+    ],
+    // Variação 2: Outro modelo
+    (greeting) => [
+        `E aí! Tudo certo? ${greeting}.`,
+        `Para que eu possa iniciar o seu atendimento, qual é o seu nome, por favor?`
+    ],
+    // Variação 3: Outro modelo
+    (greeting) => [
+        `Seja bem-vindo(a) à MAGTV! ${greeting}.`,
+        `Qual o seu nome para que possamos começar?`
+    ],
 ];
 
 // =================================================================
 // 2. NOVAS FRASES DA DANI (APÓS CAPTURA DO NOME - COM APRESENTAÇÃO)
-//    > Será usada na "Captura de Nome" (Apresentação e Menu)
+//    > Usada na "CAPTURA DE NOME" (Apresentação e Menu)
 // =================================================================
 const frasesDaniApresentacao = [
-    (formattedFirstName) => `Olá ${formattedFirstName}! É a Dani quem está te atendendo na MAGTV! É um prazer!`,
+    (formattedFirstName) => `Olá ${formattedFirstName}! É a Dani quem está te atendendo na MAGTV! É um prazer!`, // Sua frase modelo
     (formattedFirstName) => `Que ótimo, ${formattedFirstName}! Eu sou a Dani e estou pronta para te ajudar.`, 
     (formattedFirstName) => `Perfeito, ${formattedFirstName}! 😊 Eu sou a Dani, atendente da MAGTV.`, 
     (formattedFirstName) => `Uau! Que bom te ver por aqui, ${formattedFirstName}! Eu sou a Dani, sua assistente.`,
@@ -38,7 +47,6 @@ const frasesDaniApresentacao = [
 
 // =================================================================
 // LISTA DE VARIAÇÕES PARA O PITCH DE VENDAS (MENU PRINCIPAL - N1)
-// GARANTIR QUE SEJA A SUA VERSÃO COMPLETA COM 8 VARIAÇÕES
 // =================================================================
 const vendasDani = [
     // Variação 1
@@ -114,7 +122,6 @@ const vendasDani = [
         `Vamos liberar as 3 horas de teste? Qual a marca e o tipo do seu dispositivo, ${formattedFirstName}? Preciso dessa info para te dar o tutorial certo! 📺`
     ]
 ];
-// =================================================================
 
 
 // Função para obter a saudação do dia
@@ -135,13 +142,20 @@ const mapToFulfillmentMessages = (messages) => {
 };
 
 // =================================================================
-// FUNÇÃO PARA GERAR O MENU PERSONALIZADO (USADO SÓ EM FLOWBACKS)
-// É A SUA VERSÃO ORIGINAL, SÓ QUE AGORA USAMOS A `frasesDaniApresentacao` DIRETO NO WEBHOOK
+// FUNÇÃO PARA GERAR O MENU PERSONALIZADO (USADO EM FLOWBACKS)
+// Usa a lista frasesDaniApresentacao para se apresentar
 // =================================================================
 const getPersonalizedMenu = (nomeCliente) => {
     
-    // Garantimos a formatação correta do primeiro nome
+    // Garante apenas o primeiro nome formatado
     const nomeFormatado = nomeCliente.split(' ')[0].charAt(0).toUpperCase() + nomeCliente.split(' ')[0].slice(1).toLowerCase();
+    
+    // Escolhe uma frase aleatória da lista de APRESENTAÇÃO DA DANI
+    const indexAleatorio = Math.floor(Math.random() * frasesDaniApresentacao.length);
+    const fraseFunction = frasesDaniApresentacao[indexAleatorio];
+    
+    // Monta a saudação (Com o Nome + Apresentação da Dani)
+    const saudacaoComDani = fraseFunction(nomeFormatado);
     
     const menuPrincipal = `
 Como posso te ajudar hoje? Por favor, escolha uma das opções abaixo:
@@ -151,20 +165,10 @@ Como posso te ajudar hoje? Por favor, escolha uma das opções abaixo:
 3️⃣ Suporte
     `;
     
-    // Escolhe uma frase aleatória da lista de APRESENTAÇÃO DA DANI
-    const indexAleatorio = Math.floor(Math.random() * frasesDaniApresentacao.length);
-    const fraseFunction = frasesDaniApresentacao[indexAleatorio];
-    
-    // Monta a saudação (Com o Nome + Apresentação da Dani)
-    const saudacaoComDani = fraseFunction(nomeFormatado);
-    
-    // Adiciona o greeting para ficar completo no caso de o cliente voltar.
     const greeting = getGreeting();
     
     // Retorna a mensagem completa como fulfillmentText
-    return [
-        { text: { text: [`${greeting}, ${saudacaoComDani.trim()}\n\n${menuPrincipal.trim()}`] } }
-    ];
+    return mapToFulfillmentMessages([`${greeting}, ${saudacaoComDani.trim()}\n\n${menuPrincipal.trim()}`]);
 };
 
 // =================================================================
@@ -172,26 +176,20 @@ Como posso te ajudar hoje? Por favor, escolha uma das opções abaixo:
 // =================================================================
 const getVendasPitch = (nomeCliente, PLAN_VALUE) => {
     
-    // 1. Formata o primeiro nome do cliente 
     const firstName = nomeCliente.split(' ')[0];
     const formattedFirstName = firstName.charAt(0).toUpperCase() + firstName.slice(1).toLowerCase();
 
-    // 2. Escolhe uma variação aleatória
     const indexAleatorio = Math.floor(Math.random() * vendasDani.length);
     const pitchFunction = vendasDani[indexAleatorio];
 
-    // 3. Executa a função do pitch com o nome formatado e o valor do plano
     const pitchMessages = pitchFunction(formattedFirstName, PLAN_VALUE);
     
-    // 4. Mapeia para o formato de mensagens do Dialogflow
     return mapToFulfillmentMessages(pitchMessages);
 };
 // =================================================================
-// FUNÇÕES REUTILIZÁVEIS PARA TUTORIAIS
-// (MANTIDAS COMO VOCÊ ENVIOU ORIGINALMENTE)
+// FUNÇÕES REUTILIZÁVEIS PARA TUTORIAIS (RESTANTE DO SEU CÓDIGO)
 // =================================================================
 
-// 1. TUTORIAL SMART TV (SAMSUNG / LG)
 const getSmartTVInstallTutorial = () => {
     const messages = [
         "📺 Como instalar o XCloud TV na sua TV",
@@ -207,7 +205,6 @@ const getSmartTVInstallTutorial = () => {
     return mapToFulfillmentMessages(messages);
 };
 
-// 2. TUTORIAL ROKU (CONTEÚDO RESTAURADO)
 const getRokuInstallTutorial = () => {
     const messages = [
         "📺 Como instalar o XCloud TV na sua TV",
@@ -223,7 +220,6 @@ const getRokuInstallTutorial = () => {
     return mapToFulfillmentMessages(messages);
 };
 
-// 3. TUTORIAL ANDROID TV / TV BOX (CONTEÚDO RESTAURADO)
 const getAndroidTVInstallTutorial = () => {
     const messages = [
         "📺 Tutorial para Android TV (TV Box)",
@@ -240,7 +236,6 @@ const getAndroidTVInstallTutorial = () => {
     return mapToFulfillmentMessages(messages);
 };
 
-// 4. TUTORIAL CELULAR ANDROID (COM O SEU TEXTO ESPECÍFICO)
 const getAndroidCelularInstallTutorial = () => {
     const messages = [
         "📱 Tutorial para Celular Android",
@@ -255,7 +250,6 @@ const getAndroidCelularInstallTutorial = () => {
     return mapToFulfillmentMessages(messages);
 };
 
-// 5. PERGUNTA DE DESAMBIGUAÇÃO (Marca Ambígüa) - MANTIDA
 const getAmbiguousBrandQuestion = (marca) => {
     const messages = [
         `Certo, ${marca}! É uma marca excelente. 😉`,
@@ -282,7 +276,6 @@ app.post('/webhook', (req, res) => {
     let userName = null;
 
     // --- LÓGICA DE EXTRAÇÃO DE NOME SIMPLIFICADA E ROBUSTA ---
-    // (MANTIDA para garantir a robustez)
     if (nomeUserParam) {
         if (typeof nomeUserParam === 'string' && nomeUserParam.length > 0) {
             userName = nomeUserParam;
@@ -296,7 +289,6 @@ app.post('/webhook', (req, res) => {
     }
     
     // --- LÓGICA DE EXTRAÇÃO DE NOME DO CONTEXTO (FALLBACK) ---
-    // Procura o nome dentro de qualquer contexto que use 'nomeuser'
     if (!userName && req.body.queryResult.outputContexts) {
         const contexts = req.body.queryResult.outputContexts;
         for (const context of contexts) {
@@ -321,29 +313,30 @@ app.post('/webhook', (req, res) => {
     
     // =================================================================
     // ***** LÓGICA DE SAUDAÇÃO INICIAL (Default Welcome Intent) *****
-    // FASE 1: Cumprimento Seco + Pergunta o Nome (Ativa Contexto awaiting_name)
+    // FASE 1: Cumprimento Seco (MENSAGENS SEPARADAS) + Pergunta o Nome
     // =================================================================
     if (intentName === "Default Welcome Intent") {
         
         if (userName) {
-             // Se o nome JÁ foi capturado (cliente voltando), usa a saudação completa.
+             // Se o nome JÁ foi capturado, vai direto para a saudação completa (Fase 2).
             fulfillmentMessages = getPersonalizedMenu(userName);
             response.fulfillmentMessages = fulfillmentMessages;
             return res.json(response); 
         }
         
-        // Lógica para a PRIMEIRA INTERAÇÃO
+        // Lógica para a PRIMEIRA INTERAÇÃO (Pergunta o nome, usando a frase seca em múltiplas mensagens)
         const greeting = getGreeting();
         
-        // 1. Escolhe uma frase aleatória da lista de Cumprimento Seco
+        // 1. Escolhe uma variação de frases aleatória
         const indexAleatorio = Math.floor(Math.random() * frasesPrimeiraSaudacao.length);
         const fraseFunction = frasesPrimeiraSaudacao[indexAleatorio];
         
-        // 2. Monta a resposta final
-        const fraseFinal = fraseFunction(greeting);
-
-        // O Webhook força a Intent de Captura de Nome a ser o próximo passo.
-        response.fulfillmentText = fraseFinal;
+        // 2. Monta o array de mensagens separadas (frases separadas)
+        const frasesSeparadas = fraseFunction(greeting);
+        
+        // 3. Mapeia para o formato de fulfillmentMessages
+        fulfillmentMessages = mapToFulfillmentMessages(frasesSeparadas);
+        response.fulfillmentMessages = fulfillmentMessages;
         
         // **IMPORTANTE**: Define o Contexto de Saída para ATIVAR a Intent de Captura de Nome.
         const session = req.body.session;
@@ -352,23 +345,23 @@ app.post('/webhook', (req, res) => {
 
         response.outputContexts = [
             {
+                // Este contexto deve ser o Input Context da sua Intent "CAPTURA DE NOME"
                 "name": `projects/${projectId}/agent/sessions/${sessionId}/contexts/awaiting_name`,
-                "lifespanCount": 1
+                "lifespanCount": 1 // Dura apenas uma resposta
             }
         ];
         
         return res.json(response);
     }
-
+    
     // =================================================================
-    // ***** INTENT DE CAPTURA DE NOME (Captura de Nome) *****
+    // ***** INTENT DE CAPTURA DE NOME (CAPTURA DE NOME) *****
     // FASE 2: Apresentação da Dani + Menu (Salva Contexto sessao_cliente)
     // =================================================================
-    else if (intentName === "Captura de Nome") { 
+    else if (intentName === "CAPTURA DE NOME") { 
         
         if (userName) {
             
-            // Garante que o nome seja só o primeiro e formatado (Ex: "Heloísa")
             const nomeFormatado = userName.split(' ')[0].charAt(0).toUpperCase() + userName.split(' ')[0].slice(1).toLowerCase();
 
             // 1. Escolhe uma frase aleatória da lista de APRESENTAÇÃO DA DANI
@@ -386,7 +379,6 @@ Como posso te ajudar hoje? Por favor, escolha uma das opções abaixo:
 3️⃣ Suporte
             `;
 
-            // Junta a Apresentação da Dani (que já tem o "Olá Heloisa!") e o Menu.
             response.fulfillmentText = `${saudacaoComDani.trim()}\n\n${menuPrincipal.trim()}`; 
             
             // **IMPORTANTE**: Define o Contexto de Saída para GUARDAR o nome.
@@ -398,7 +390,7 @@ Como posso te ajudar hoje? Por favor, escolha uma das opções abaixo:
                 {
                     // Seu contexto de sessão para manter o nome durante a conversa
                     "name": `projects/${projectId}/agent/sessions/${sessionId}/contexts/sessao_cliente`,
-                    "lifespanCount": 4, // Exemplo de lifespan
+                    "lifespanCount": 4, 
                     "parameters": {
                         "nomeuser": userName // Garante que o nome fique no contexto
                     }
@@ -426,7 +418,6 @@ Como posso te ajudar hoje? Por favor, escolha uma das opções abaixo:
              nomeParaPitch = "Cliente"; 
         }
 
-        // Força o uso da função de pitch aleatório, que usa nomeParaPitch
         fulfillmentMessages = getVendasPitch(nomeParaPitch, PLAN_VALUE);
             
         response.fulfillmentMessages = fulfillmentMessages;
@@ -445,7 +436,6 @@ Assim que você fizer o pagamento, me envie o comprovante, por favor! 😉`
     } else if (intentName === "Menu Principal - N3 - select.number") { 
         // Opção 3: Suporte 
         
-        // Se o nome foi capturado, usa a saudação personalizada e o menu (caso o fluxo volte aqui)
         if (userName) {
             fulfillmentMessages = getPersonalizedMenu(userName);
             response.fulfillmentMessages = fulfillmentMessages;
