@@ -1,7 +1,7 @@
 const express = require('express');
-const bodyParser = require('body-parser'); // <--- CORREÇÃO DE AMBIENTE: ADICIONADO body-parser
+const bodyParser = require('body-parser'); 
 const app = express();
-app.use(bodyParser.json()); // <--- CORREÇÃO DE AMBIENTE: TROCADO express.json() por bodyParser.json()
+app.use(bodyParser.json()); 
 
 // =================================================================
 // INTEGRAÇÃO GEMINI - INÍCIO
@@ -289,7 +289,7 @@ const getAmbiguousBrandQuestion = (marca) => {
 // =================================================================
 // WEBHOOK PRINCIPAL
 // =================================================================
-app.post('/webhook', async (req, res) => { // <-- MUITO IMPORTANTE: AGORA É ASYNC
+app.post('/webhook', async (req, res) => { // <-- AGORA É ASYNC!
   try {
     const intentName = req.body.queryResult.intent.displayName;
     const queryText = req.body.queryResult.queryText;
@@ -453,7 +453,6 @@ Aguarde um momento, vou encaminhar seu atendimento para o suporte.`;
     // ----------------------------------------------------------------
     } else if (intentName === "Default Fallback Intent") {
         // *** SMART FALLBACK COM GEMINI ***
-        // O await só funciona porque a função app.post é ASYNC!
         const geminiResponseText = await callGemini(queryText, userName);
         response.fulfillmentText = geminiResponseText;
         // ********************************
