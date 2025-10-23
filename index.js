@@ -1,52 +1,77 @@
 const express = require('express');
-const bodyParser = require('body-parser');
+const bodyParser = require('body-parser'); 
 const app = express();
-app.use(bodyParser.json());
+app.use(bodyParser.json()); 
+
+// =================================================================
+// INTEGRAÇÃO GEMINI - INÍCIO
+// =================================================================
+const { GoogleGenAI } = require('@google/genai');
+
+// Ele busca automaticamente a chave na variável de ambiente GEMINI_API_KEY do Render
+const ai = new GoogleGenAI({});
+
+// Este é o prompt que dá a personalidade da Dani ao Gemini
+const SYSTEM_INSTRUCTION = `
+Você é Dani, a assistente virtual e atendente primária da MAGTV. Sua missão é responder perguntas complexas dos clientes (suporte ou dúvidas gerais) com base no histórico da conversa, mantendo uma personalidade amigável, prestativa e profissional. Você funciona como um "Smart Fallback" para o bot principal.
+
+REGRAS:
+1. NUNCA mencione que você é um modelo de linguagem (LLM) ou um programa de IA. Você é a Dani.
+2. Use emojis de forma amigável (😊, 👍, 👋).
+3. A MAGTV não é compatível com iOS (iPhone/iPad). Se perguntarem, informe de forma educada e sugira Android.
+4. Se for perguntado sobre valores ou PIX, responda com os dados fixos: Plano Mensal R$ 30,00, PIX 94 98444-5961 (Davi Eduardo Borges).
+
+`;
+
+// Função assíncrona para chamar o Gemini
+async function callGemini(queryText, userName) {
+    // Busca o nome do usuário no contexto para personalizar a chamada
+    const userPrompt = `${userName ? `O cliente ${userName} disse: ` : 'O cliente disse: '}` + queryText;
+    
+    try {
+        const response = await ai.models.generateContent({
+            model: 'gemini-2.5-flash',
+            contents: userPrompt,
+            config: {
+                systemInstruction: SYSTEM_INSTRUCTION,
+                temperature: 0.5,
+            },
+        });
+        
+        return response.text;
+        
+    } catch (error) {
+        console.error("Erro ao chamar o Gemini:", error);
+        return "Desculpe, a Dani está com problemas técnicos no momento. Por favor, tente novamente mais tarde.";
+    }
+}
+// =================================================================
+// INTEGRAÇÃO GEMINI - FIM
+// =================================================================
+
 
 // CONFIGURAÇÕES DO BOT
-const PIX_KEY = "magtvassinaturas@gmail.com";
+const PIX_KEY = "94 98444-5961";
 const PIX_NAME = "Davi Eduardo Borges";
 const PLAN_VALUE = "R$ 30,00";
 const CODE_DOWNLOADER = "6519181"; // Seu código
 const SITE_RUSH = "https://rush.ninja/";
 
 // =================================================================
-// 1. FRASES DE PRIMEIRA SAUDAÇÃO (Pergunta o Nome - SEM DANI)
-//    > Usada na "Default Welcome Intent" (Cumprimento Seco em mensagens separadas)
+// LISTA DE FRASES DA DANI (MENU INICIAL)
 // =================================================================
-const frasesPrimeiraSaudacao = [
-    // Variação 1: Seu modelo
-    (greeting) => [
-        `Olá 👋 ${greeting}! Recebemos sua mensagem!`,
-        `Antes de prosseguir, me conta rapidinho: qual é o seu nome?`
-    ],
-    // Variação 2: Outro modelo
-    (greeting) => [
-        `E aí! Tudo certo? ${greeting}.`,
-        `Para que eu possa iniciar o seu atendimento, qual é o seu nome, por favor?`
-    ],
-    // Variação 3: Outro modelo
-    (greeting) => [
-        `Seja bem-vindo(a) à MAGTV! ${greeting}.`,
-        `Qual o seu nome para que possamos começar?`
-    ],
+const frasesDani = [
+    "Olá [Nome do Cliente]! Seja muito bem-vindo(a) à MAGTV! Meu nome é Dani. ", 
+    "Olá [Nome do Cliente]! Que bom que você veio! 😊 Eu sou a Dani, da MAGTV. ", 
+    "Olá [Nome do Cliente]! Eu sou a Dani, atendente da MAGTV. É um prazer falar com você! 😊 ",
+    "Uau! Que bom que você veio [Nome do Cliente]! Eu sou a Dani, a sua assistente na MAGTV! Estou super animada para te ajudar hoje! ",
+    "Ah, que ótimo te ver por aqui [Nome do Cliente]! Pode contar comigo, a Dani! Meu objetivo é deixar tudo mais fácil para você na MAGTV. ",
+    "Seja muito, muito bem-vindo(a) [Nome do Cliente]! Você está falando com a Dani, e eu cuido de tudo por aqui na MAGTV com o maior prazer! ",
+    "Olá [Nome do Cliente]! É a Dani quem está te atendendo na MAGTV! É um prazer! "
 ];
-
-// =================================================================
-// 2. NOVAS FRASES DA DANI (APÓS CAPTURA DO NOME - COM APRESENTAÇÃO)
-//    > Usada na "CAPTURA DE NOME" (Apresentação e Menu)
-// =================================================================
-const frasesDaniApresentacao = [
-    (formattedFirstName) => `Olá ${formattedFirstName}! É a Dani quem está te atendendo na MAGTV! É um prazer!`, // Sua frase modelo
-    (formattedFirstName) => `Que ótimo, ${formattedFirstName}! Eu sou a Dani e estou pronta para te ajudar.`, 
-    (formattedFirstName) => `Perfeito, ${formattedFirstName}! 😊 Eu sou a Dani, atendente da MAGTV.`, 
-    (formattedFirstName) => `Uau! Que bom te ver por aqui, ${formattedFirstName}! Eu sou a Dani, sua assistente.`,
-    (formattedFirstName) => `Ah, que ótimo te ver por aqui, ${formattedFirstName}! Pode contar comigo, a Dani! Meu objetivo é deixar tudo fácil na MAGTV.`,
-];
-
-
 // =================================================================
 // LISTA DE VARIAÇÕES PARA O PITCH DE VENDAS (MENU PRINCIPAL - N1)
+// Garantido em 8 variações.
 // =================================================================
 const vendasDani = [
     // Variação 1
@@ -69,7 +94,7 @@ const vendasDani = [
     ],
     // Variação 3
     (formattedFirstName, PLAN_VALUE) => [
-        ` ${formattedFirstName}! Você acaba de tomar a melhor decisão! 😎`,
+        `Seja muito bem-vindo(a), ${formattedFirstName}! Você acaba de tomar a melhor decisão! 😎`,
         `Nosso plano é super simples: **Mensal** e acessível, apenas **R$ ${PLAN_VALUE}**.`,
         `Com esse valor, você libera um universo de mais de **2.000 canais** e milhares de filmes/séries (**20 mil** filmes e **16 mil** séries!).`,
         `A instalação é fácil na sua Smart TV (LG/Samsung/Roku) e em qualquer dispositivo Android (TV Box, Google TV, Celular) com nosso app.`,
@@ -78,12 +103,12 @@ const vendasDani = [
     ],
     // Variação 4
     (formattedFirstName, PLAN_VALUE) => [
-        `Que alegria te atender, ${formattedFirstName}! vamos lá`,
+        `Que alegria te atender, ${formattedFirstName}! Bem-vindo(a) à MAGTV!`,
         `O nosso **Plano Mensal** é o mais vendido, custando somente **R$ ${PLAN_VALUE}**.`,
         `Conteúdo de sobra! São mais de **2.000 canais** + todo o acervo de streaming (filmes, séries, animes) que ultrapassa as **36 mil** opções.`,
         `Onde assistir? Em Smart TVs (via IPTV) ou no seu Android (Celular/Box) com o app exclusivo.`,
         `🚫 Atenção: O sistema **não roda em iOS** (iPhone/iPad).`,
-        `Vamos testar por 3 horas? Me informa a marca do seu dispositivo ${formattedFirstName}. Te envio o guia na hora! 🥳`
+        `Vamos testar por 3 horas? Me informa a marca e o tipo do seu dispositivo (Smart TV, TV Box, Android TV, Roku TV Celular) ${formattedFirstName}. Te envio o guia na hora! 🥳`
     ],
     // Variação 5
     (formattedFirstName, PLAN_VALUE) => [
@@ -92,11 +117,11 @@ const vendasDani = [
         `Você terá acesso total a mais de **2.000 canais**, **20 mil filmes** e **16 mil séries**! O tédio vai acabar!`,
         `Compatível com TVs Samsung, LG, Roku e todo o ecossistema Android (TV Box, Celular).`,
         `⚠️ Recado rápido: Usuários de **iOS (iPhone/iPad) não são suportados**.`,
-        `Para liberarmos seu teste, me diga ${formattedFirstName}: Qual a marca do dispositivo onde você vai instalar? Assim acerto no tutorial! 📺`
+        `Para liberarmos seu teste, me diga ${formattedFirstName}: Qual a marca e o modelo do dispositivo onde você vai instalar? Assim acerto no tutorial! 📺`
     ],
     // Variação 6
     (formattedFirstName, PLAN_VALUE) => [
-        `É isso ai, ${formattedFirstName}! Sua escolha foi perfeita!`,
+        `Olá, ${formattedFirstName}! Sua escolha foi perfeita!`,
         `O plano que você busca é o **Mensal**, e ele custa apenas **R$ ${PLAN_VALUE}**.`,
         `A experiência é completa: São mais de **2.000 canais** e um catálogo atualizado com mais de **36 mil** títulos entre séries, filmes e desenhos!`,
         `Funciona em todas as Smart TVs (via IPTV) e dispositivos Android (com o nosso aplicativo P2P).`,
@@ -119,9 +144,10 @@ const vendasDani = [
         `Com isso, você tem a sua disposição mais de **2.000 canais** e um vasto catálogo de **20.000 filmes** e **16.000 séries** para maratonar!`,
         `Compatibilidade garantida em Smart TVs, TV Box e dispositivos Android.`,
         `⚠️ Alerta: **Não suportamos iOS** (iPhone/iPad).`,
-        `Vamos liberar as 3 horas de teste? Qual a marca e o dispositivo onde vai testar ${formattedFirstName}? Preciso dessa info para te dar o tutorial certo! 📺`
+        `Vamos liberar as 3 horas de teste? Qual a marca e o tipo do seu dispositivo, ${formattedFirstName}? Preciso dessa info para te dar o tutorial certo! 📺`
     ]
 ];
+// =================================================================
 
 
 // Função para obter a saudação do dia
@@ -142,20 +168,16 @@ const mapToFulfillmentMessages = (messages) => {
 };
 
 // =================================================================
-// FUNÇÃO PARA GERAR O MENU PERSONALIZADO (USADO EM FLOWBACKS)
-// Usa a lista frasesDaniApresentacao para se apresentar
+// FUNÇÃO PARA GERAR A SAUDAÇÃO PERSONALIZADA E O MENU COM DELAY
 // =================================================================
 const getPersonalizedMenu = (nomeCliente) => {
     
-    // Garante apenas o primeiro nome formatado
+    const indexAleatorio = Math.floor(Math.random() * frasesDani.length);
+    let saudacao = frasesDani[indexAleatorio];
+
+    // Formata o nome para usar apenas o primeiro nome com a primeira letra maiúscula
     const nomeFormatado = nomeCliente.split(' ')[0].charAt(0).toUpperCase() + nomeCliente.split(' ')[0].slice(1).toLowerCase();
-    
-    // Escolhe uma frase aleatória da lista de APRESENTAÇÃO DA DANI
-    const indexAleatorio = Math.floor(Math.random() * frasesDaniApresentacao.length);
-    const fraseFunction = frasesDaniApresentacao[indexAleatorio];
-    
-    // Monta a saudação (Com o Nome + Apresentação da Dani)
-    const saudacaoComDani = fraseFunction(nomeFormatado);
+    saudacao = saudacao.replace('[Nome do Cliente]', nomeFormatado);
     
     const menuPrincipal = `
 Como posso te ajudar hoje? Por favor, escolha uma das opções abaixo:
@@ -164,11 +186,8 @@ Como posso te ajudar hoje? Por favor, escolha uma das opções abaixo:
 2️⃣ Pagamento
 3️⃣ Suporte
     `;
-    
-    const greeting = getGreeting();
-    
-    // Retorna a mensagem completa como fulfillmentText
-    return mapToFulfillmentMessages([`${greeting}, ${saudacaoComDani.trim()}\n\n${menuPrincipal.trim()}`]);
+
+    return mapToFulfillmentMessages([saudacao, menuPrincipal]);
 };
 
 // =================================================================
@@ -176,20 +195,25 @@ Como posso te ajudar hoje? Por favor, escolha uma das opções abaixo:
 // =================================================================
 const getVendasPitch = (nomeCliente, PLAN_VALUE) => {
     
+    // 1. Formata o primeiro nome do cliente (Garantindo que mesmo que a Intent envie o nome completo, só o primeiro nome seja usado no pitch)
     const firstName = nomeCliente.split(' ')[0];
     const formattedFirstName = firstName.charAt(0).toUpperCase() + firstName.slice(1).toLowerCase();
 
+    // 2. Escolhe uma variação aleatória
     const indexAleatorio = Math.floor(Math.random() * vendasDani.length);
     const pitchFunction = vendasDani[indexAleatorio];
 
+    // 3. Executa a função do pitch com o nome formatado e o valor do plano
     const pitchMessages = pitchFunction(formattedFirstName, PLAN_VALUE);
     
+    // 4. Mapeia para o formato de mensagens do Dialogflow
     return mapToFulfillmentMessages(pitchMessages);
 };
 // =================================================================
-// FUNÇÕES REUTILIZÁVEIS PARA TUTORIAIS (RESTANTE DO SEU CÓDIGO)
+// FUNÇÕES REUTILIZÁVEIS PARA TUTORIAIS (RESTAURADAS COMPLETAS)
 // =================================================================
 
+// 1. TUTORIAL SMART TV (SAMSUNG / LG)
 const getSmartTVInstallTutorial = () => {
     const messages = [
         "📺 Como instalar o XCloud TV na sua TV",
@@ -205,6 +229,7 @@ const getSmartTVInstallTutorial = () => {
     return mapToFulfillmentMessages(messages);
 };
 
+// 2. TUTORIAL ROKU (CONTEÚDO RESTAURADO)
 const getRokuInstallTutorial = () => {
     const messages = [
         "📺 Como instalar o XCloud TV na sua TV",
@@ -220,6 +245,7 @@ const getRokuInstallTutorial = () => {
     return mapToFulfillmentMessages(messages);
 };
 
+// 3. TUTORIAL ANDROID TV / TV BOX (CONTEÚDO RESTAURADO)
 const getAndroidTVInstallTutorial = () => {
     const messages = [
         "📺 Tutorial para Android TV (TV Box)",
@@ -236,6 +262,7 @@ const getAndroidTVInstallTutorial = () => {
     return mapToFulfillmentMessages(messages);
 };
 
+// 4. TUTORIAL CELULAR ANDROID (COM O SEU TEXTO ESPECÍFICO)
 const getAndroidCelularInstallTutorial = () => {
     const messages = [
         "📱 Tutorial para Celular Android",
@@ -245,11 +272,12 @@ const getAndroidCelularInstallTutorial = () => {
         "* Na página que abrir, encontre o aplicativo com o nome P2P Rush Original.", 
         "* Clique no botão Baixar e aguarde o download.",
         "* Quando o download terminar, clique no arquivo baixado para instalar o aplicativo. Se for a primeira vez, pode ser que o celular peça permissão para instalar de fontes desconhecidas; basta aceitar.",
-        "Após a instalação do app, digite **TESTE** para receber seu acesso!"
-    ]
+        "Aguarde um momento para criar seu Acesso!"
+    ];
     return mapToFulfillmentMessages(messages);
 };
 
+// 5. PERGUNTA DE DESAMBIGUAÇÃO (Marca Ambígüa)
 const getAmbiguousBrandQuestion = (marca) => {
     const messages = [
         `Certo, ${marca}! É uma marca excelente. 😉`,
@@ -264,7 +292,7 @@ const getAmbiguousBrandQuestion = (marca) => {
 // =================================================================
 // WEBHOOK PRINCIPAL
 // =================================================================
-app.post('/webhook', (req, res) => {
+app.post('/webhook', async (req, res) => { // <-- MUITO IMPORTANTE: AGORA É ASYNC
   try {
     const intentName = req.body.queryResult.intent.displayName;
     const queryText = req.body.queryResult.queryText;
@@ -278,17 +306,22 @@ app.post('/webhook', (req, res) => {
     // --- LÓGICA DE EXTRAÇÃO DE NOME SIMPLIFICADA E ROBUSTA ---
     if (nomeUserParam) {
         if (typeof nomeUserParam === 'string' && nomeUserParam.length > 0) {
+            // Caso seja uma string simples (nome completo)
             userName = nomeUserParam;
         } else if (typeof nomeUserParam === 'object' && nomeUserParam.name) {
+            // Caso seja um objeto com a chave 'name' (padrão de entidade @sys.person)
             userName = nomeUserParam.name;
         } else if (typeof nomeUserParam === 'object' && nomeUserParam.displayName) {
+             // Caso seja um objeto com a chave 'displayName' (alguns formatos de context)
             userName = nomeUserParam.displayName;
         } else if (typeof nomeUserParam === 'object' && nomeUserParam.structValue && nomeUserParam.structValue.name) {
+             // Tentativa extra para formatos complexos
              userName = nomeUserParam.structValue.name;
         }
     }
     
     // --- LÓGICA DE EXTRAÇÃO DE NOME DO CONTEXTO (FALLBACK) ---
+    // Procura o nome dentro de qualquer contexto que use 'nomeuser'
     if (!userName && req.body.queryResult.outputContexts) {
         const contexts = req.body.queryResult.outputContexts;
         for (const context of contexts) {
@@ -313,111 +346,38 @@ app.post('/webhook', (req, res) => {
     
     // =================================================================
     // ***** LÓGICA DE SAUDAÇÃO INICIAL (Default Welcome Intent) *****
-    // FASE 1: Cumprimento Seco (MENSAGENS SEPARADAS) + Pergunta o Nome
     // =================================================================
     if (intentName === "Default Welcome Intent") {
         
         if (userName) {
-             // Se o nome JÁ foi capturado, vai direto para a saudação completa (Fase 2).
+             // Se o nome foi capturado, envia a saudação personalizada e o menu.
             fulfillmentMessages = getPersonalizedMenu(userName);
             response.fulfillmentMessages = fulfillmentMessages;
             return res.json(response); 
         }
         
-        // Lógica para a PRIMEIRA INTERAÇÃO (Pergunta o nome, usando a frase seca em múltiplas mensagens)
+        // Lógica estática SE O NOME NÃO FOI CAPTURADO
         const greeting = getGreeting();
+        response.fulfillmentText = `Olá! ${greeting}, Seja bem-vindo(a) à MAGTV! Meu nome é Dani.\n\nComo posso te ajudar hoje?\n1️⃣ Novo Cliente\n2️⃣ Pagamento\n3️⃣ Suporte`;
         
-        // 1. Escolhe uma variação de frases aleatória
-        const indexAleatorio = Math.floor(Math.random() * frasesPrimeiraSaudacao.length);
-        const fraseFunction = frasesPrimeiraSaudacao[indexAleatorio];
-        
-        // 2. Monta o array de mensagens separadas (frases separadas)
-        const frasesSeparadas = fraseFunction(greeting);
-        
-        // 3. Mapeia para o formato de fulfillmentMessages
-        fulfillmentMessages = mapToFulfillmentMessages(frasesSeparadas);
-        response.fulfillmentMessages = fulfillmentMessages;
-        
-        // **IMPORTANTE**: Define o Contexto de Saída para ATIVAR a Intent de Captura de Nome.
-        const session = req.body.session;
-        const sessionId = session.split('/').pop();
-        const projectId = session.split('/')[1];
-
-        response.outputContexts = [
-            {
-                // Este contexto deve ser o Input Context da sua Intent "CAPTURA DE NOME"
-                "name": `projects/${projectId}/agent/sessions/${sessionId}/contexts/awaiting_name`,
-                "lifespanCount": 1 // Dura apenas uma resposta
-            }
-        ];
-        
-        return res.json(response);
-    }
-    
-    // =================================================================
-    // ***** INTENT DE CAPTURA DE NOME (CAPTURA DE NOME) *****
-    // FASE 2: Apresentação da Dani + Menu (Salva Contexto sessao_cliente)
-    // =================================================================
-    else if (intentName === "CAPTURA DE NOME") { 
-        
-        if (userName) {
-            
-            const nomeFormatado = userName.split(' ')[0].charAt(0).toUpperCase() + userName.split(' ')[0].slice(1).toLowerCase();
-
-            // 1. Escolhe uma frase aleatória da lista de APRESENTAÇÃO DA DANI
-            const indexAleatorio = Math.floor(Math.random() * frasesDaniApresentacao.length);
-            const fraseFunction = frasesDaniApresentacao[indexAleatorio];
-            
-            // 2. Monta a saudação (Com o Nome + Apresentação da Dani)
-            const saudacaoComDani = fraseFunction(nomeFormatado);
-            
-            const menuPrincipal = `
-Como posso te ajudar hoje? Por favor, escolha uma das opções abaixo:
-
-1️⃣ Novo Cliente
-2️⃣ Pagamento
-3️⃣ Suporte
-            `;
-
-            response.fulfillmentText = `${saudacaoComDani.trim()}\n\n${menuPrincipal.trim()}`; 
-            
-            // **IMPORTANTE**: Define o Contexto de Saída para GUARDAR o nome.
-            const session = req.body.session;
-            const sessionId = session.split('/').pop();
-            const projectId = session.split('/')[1];
-            
-            response.outputContexts = [
-                {
-                    // Seu contexto de sessão para manter o nome durante a conversa
-                    "name": `projects/${projectId}/agent/sessions/${sessionId}/contexts/sessao_cliente`,
-                    "lifespanCount": 4, 
-                    "parameters": {
-                        "nomeuser": userName // Garante que o nome fique no contexto
-                    }
-                }
-            ];
-            
-            return res.json(response); 
-            
-        } else {
-             // Caso o Dialogflow não tenha capturado o nome corretamente
-             response.fulfillmentText = "Desculpe, não consegui entender seu nome. Poderia digitá-lo novamente, por favor?";
-        }
     }
 
 
     // ----------------------------------------------------------------
     // 1. INTENÇÕES DO MENU PRINCIPAL (TRATAMENTO DE NOME E FLUXO)
     // ----------------------------------------------------------------
-    else if (intentName === "Menu Principal - N1") { 
+    if (intentName === "Menu Principal - N1") { 
         // Opção 1: Novo Cliente 
         
         let nomeParaPitch = userName;
         
+        // Se a Intent falhar miseravelmente em passar o nome, usamos o "Cliente" 
+        // como segurança extrema, mas o nome do cliente deve ser usado.
         if (!nomeParaPitch) {
              nomeParaPitch = "Cliente"; 
         }
 
+        // Força o uso da função de pitch aleatório, que usa nomeParaPitch
         fulfillmentMessages = getVendasPitch(nomeParaPitch, PLAN_VALUE);
             
         response.fulfillmentMessages = fulfillmentMessages;
@@ -436,6 +396,7 @@ Assim que você fizer o pagamento, me envie o comprovante, por favor! 😉`
     } else if (intentName === "Menu Principal - N3 - select.number") { 
         // Opção 3: Suporte 
         
+        // Se o nome foi capturado, usa a saudação personalizada e o menu (caso o fluxo volte aqui)
         if (userName) {
             fulfillmentMessages = getPersonalizedMenu(userName);
             response.fulfillmentMessages = fulfillmentMessages;
@@ -472,7 +433,7 @@ Aguarde um momento, vou encaminhar seu atendimento para o suporte.`;
     } else if (intentName === "TUTORIAL ANDROIDTV") { 
         fulfillmentMessages = getAndroidTVInstallTutorial();
 
-    } else if (intentName === "TUTORIAL CELULAR") { 
+    } else if (intentName === "TUTORIAL CELULAR") { // INTENT CELULAR ADICIONADA AQUI
         fulfillmentMessages = getAndroidCelularInstallTutorial();
 
     } else if (intentName === "Sistemas de Confirmação") { 
@@ -494,7 +455,11 @@ Aguarde um momento, vou encaminhar seu atendimento para o suporte.`;
     // 3. INTENÇÕES PADRÃO (Fallback/Resto)
     // ----------------------------------------------------------------
     } else if (intentName === "Default Fallback Intent") {
-        response.fulfillmentText = `Desculpe, não entendi. Por favor, escolha uma das opções do menu principal (1️⃣ Novo Cliente, 2️⃣ Pagamento ou 3️⃣ Suporte) ou entre em contato com o suporte em nosso número de WhatsApp.`;
+        
+        // *** NOVO TRECHO DE SMART FALLBACK COM GEMINI ***
+        const geminiResponseText = await callGemini(queryText, userName);
+        response.fulfillmentText = geminiResponseText;
+        // **********************************************
         
     } else {
         response.fulfillmentText = `Desculpe, não entendi sua mensagem. Por favor, escolha uma das opções do menu principal (1️⃣ Novo Cliente, 2️⃣ Pagamento ou 3️⃣ Suporte) ou entre em contato com o suporte em nosso número de WhatsApp.`;
