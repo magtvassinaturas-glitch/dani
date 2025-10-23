@@ -6,10 +6,10 @@ app.use(bodyParser.json());
 // =================================================================
 // INTEGRAÇÃO GEMINI - INÍCIO
 // =================================================================
-const { GoogleGenAI } = require('@google/genai');
+const { GoogleGenAI } = require('@google/genai'); // <-- MODIFICAÇÃO GEMINI
 
 // Ele busca automaticamente a chave na variável de ambiente GEMINI_API_KEY do Render
-const ai = new GoogleGenAI({});
+const ai = new GoogleGenAI({}); // <-- MODIFICAÇÃO GEMINI
 
 // Este é o prompt que dá a personalidade da Dani ao Gemini
 const SYSTEM_INSTRUCTION = `
@@ -20,12 +20,10 @@ REGRAS:
 2. Use emojis de forma amigável (😊, 👍, 👋).
 3. A MAGTV não é compatível com iOS (iPhone/iPad). Se perguntarem, informe de forma educada e sugira Android.
 4. Se for perguntado sobre valores ou PIX, responda com os dados fixos: Plano Mensal R$ 30,00, PIX 94 98444-5961 (Davi Eduardo Borges).
-
 `;
 
 // Função assíncrona para chamar o Gemini
 async function callGemini(queryText, userName) {
-    // Busca o nome do usuário no contexto para personalizar a chamada
     const userPrompt = `${userName ? `O cliente ${userName} disse: ` : 'O cliente disse: '}` + queryText;
     
     try {
@@ -48,7 +46,6 @@ async function callGemini(queryText, userName) {
 // =================================================================
 // INTEGRAÇÃO GEMINI - FIM
 // =================================================================
-
 
 // CONFIGURAÇÕES DO BOT
 const PIX_KEY = "94 98444-5961";
@@ -292,7 +289,7 @@ const getAmbiguousBrandQuestion = (marca) => {
 // =================================================================
 // WEBHOOK PRINCIPAL
 // =================================================================
-app.post('/webhook', async (req, res) => { // <-- MUITO IMPORTANTE: AGORA É ASYNC
+app.post('/webhook', async (req, res) => { // <-- MODIFICAÇÃO GEMINI: AGORA É ASYNC
   try {
     const intentName = req.body.queryResult.intent.displayName;
     const queryText = req.body.queryResult.queryText;
@@ -455,11 +452,10 @@ Aguarde um momento, vou encaminhar seu atendimento para o suporte.`;
     // 3. INTENÇÕES PADRÃO (Fallback/Resto)
     // ----------------------------------------------------------------
     } else if (intentName === "Default Fallback Intent") {
-        
-        // *** NOVO TRECHO DE SMART FALLBACK COM GEMINI ***
-        const geminiResponseText = await callGemini(queryText, userName);
+        // *** SMART FALLBACK COM GEMINI ***
+        const geminiResponseText = await callGemini(queryText, userName); // <-- MODIFICAÇÃO GEMINI
         response.fulfillmentText = geminiResponseText;
-        // **********************************************
+        // ********************************
         
     } else {
         response.fulfillmentText = `Desculpe, não entendi sua mensagem. Por favor, escolha uma das opções do menu principal (1️⃣ Novo Cliente, 2️⃣ Pagamento ou 3️⃣ Suporte) ou entre em contato com o suporte em nosso número de WhatsApp.`;
