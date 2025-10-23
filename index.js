@@ -1,15 +1,15 @@
 const express = require('express');
-const bodyParser = require('body-parser'); 
+const bodyParser = require('body-parser'); // <--- CORREÇÃO DE AMBIENTE: ADICIONADO body-parser
 const app = express();
-app.use(bodyParser.json()); 
+app.use(bodyParser.json()); // <--- CORREÇÃO DE AMBIENTE: TROCADO express.json() por bodyParser.json()
 
 // =================================================================
 // INTEGRAÇÃO GEMINI - INÍCIO
 // =================================================================
-const { GoogleGenAI } = require('@google/genai'); // <-- MODIFICAÇÃO GEMINI
+const { GoogleGenAI } = require('@google/genai');
 
 // Ele busca automaticamente a chave na variável de ambiente GEMINI_API_KEY do Render
-const ai = new GoogleGenAI({}); // <-- MODIFICAÇÃO GEMINI
+const ai = new GoogleGenAI({});
 
 // Este é o prompt que dá a personalidade da Dani ao Gemini
 const SYSTEM_INSTRUCTION = `
@@ -289,7 +289,7 @@ const getAmbiguousBrandQuestion = (marca) => {
 // =================================================================
 // WEBHOOK PRINCIPAL
 // =================================================================
-app.post('/webhook', async (req, res) => { // <-- MODIFICAÇÃO GEMINI: AGORA É ASYNC
+app.post('/webhook', async (req, res) => { // <-- MUITO IMPORTANTE: AGORA É ASYNC
   try {
     const intentName = req.body.queryResult.intent.displayName;
     const queryText = req.body.queryResult.queryText;
@@ -453,7 +453,8 @@ Aguarde um momento, vou encaminhar seu atendimento para o suporte.`;
     // ----------------------------------------------------------------
     } else if (intentName === "Default Fallback Intent") {
         // *** SMART FALLBACK COM GEMINI ***
-        const geminiResponseText = await callGemini(queryText, userName); // <-- MODIFICAÇÃO GEMINI
+        // O await só funciona porque a função app.post é ASYNC!
+        const geminiResponseText = await callGemini(queryText, userName);
         response.fulfillmentText = geminiResponseText;
         // ********************************
         
