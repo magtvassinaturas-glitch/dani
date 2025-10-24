@@ -4,7 +4,7 @@ const app = express();
 app.use(bodyParser.json()); 
 
 // =================================================================
-// INTEGRAÇÃO GEMINI - INÍCIO (INCLUÍDO AQUI!)
+// INTEGRAÇÃO GEMINI - INÍCIO
 // =================================================================
 const { GoogleGenAI } = require('@google/genai');
 
@@ -36,7 +36,8 @@ async function callGemini(queryText, userName) {
             },
         });
         
-        return response.text;
+        // A API mais antiga pode retornar a resposta em 'response.text' ou 'response.candidates[0].content.parts[0].text'
+        return response.text || (response.candidates && response.candidates[0].content.parts[0].text) || "Desculpe, a Dani não conseguiu gerar uma resposta agora. Tente novamente.";
         
     } catch (error) {
         console.error("Erro ao chamar o Gemini:", error);
@@ -46,7 +47,6 @@ async function callGemini(queryText, userName) {
 // =================================================================
 // INTEGRAÇÃO GEMINI - FIM
 // =================================================================
-
 
 // CONFIGURAÇÕES DO BOT
 const PIX_KEY = "94 98444-5961";
@@ -290,7 +290,7 @@ const getAmbiguousBrandQuestion = (marca) => {
 // =================================================================
 // WEBHOOK PRINCIPAL
 // =================================================================
-app.post('/webhook', async (req, res) => { // <-- MUDANÇA CRUCIAL: AGORA É ASYNC!
+app.post('/webhook', async (req, res) => { 
   try {
     const intentName = req.body.queryResult.intent.displayName;
     const queryText = req.body.queryResult.queryText;
