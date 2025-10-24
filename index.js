@@ -1,5 +1,5 @@
 const express = require('express');
-const bodyParser = require('body-parser');
+const bodyParser = require('body-parser'); 
 const app = express();
 app.use(bodyParser.json()); 
 
@@ -33,7 +33,7 @@ const vendasDani = [
         `Ele inclui acesso a mais de **2.000 canais**, **20 mil filmes**, **16 mil séries** e desenhos para toda a família! É conteúdo que não acaba mais! 🚀`,
         `Compatibilidade: Funciona perfeitamente em Smart TVs (Samsung, LG, Roku via IPTV) e dispositivos Android (Celulares, TV Box, Android TV) com nosso app exclusivo.`,
         `⚠️ Importante: *Não funciona em iOS* (iPhone/iPad).`,
-        `Para te ajudar com a instalação, preciso de uma informação rapidinha: Você vai usar o serviço em SMARTV,TV BOX, ANDROIDTV, ROKU TV ou Celular ${formattedFirstName}? Assim eu já te mando o tutorial certinho! 😉`
+        `Para te ajudar com a instalação, preciso de uma informação rapidinha: Você vai usar o serviço em SMARTV, ANDROIDTV ou Celular, e qual a marca do seu dispositivo, ${formattedFirstName}? Assim eu já te mando o tutorial certinho! 😉`
     ],
     // Variação 2
     (formattedFirstName, PLAN_VALUE) => [
@@ -42,7 +42,7 @@ const vendasDani = [
         `O que você leva? Um catálogo completo com mais de **2.000 canais**, além de **20.000 filmes** e **16.000 séries** atualizadas semanalmente.`,
         `Onde você pode usar? Em qualquer Smart TV compatível (Samsung, LG, Roku) e todos os Androids (TV Box, Celular) usando a tecnologia P2P do nosso app.`,
         `🛑 Aviso: O serviço **não é compatível com aparelhos iOS** (iPhone/iPad).`,
-        `Pronto para o teste? Antes, preciso saber: Qual a marca do seu dispositivo ${formattedFirstName}? Assim já te envio o tutorial exato! 📺`
+        `Pronto para o teste? Antes, preciso saber: Qual a marca do seu dispositivo, ${formattedFirstName}? Assim já te envio o tutorial exato! 📺`
     ],
     // Variação 3
     (formattedFirstName, PLAN_VALUE) => [
@@ -51,7 +51,7 @@ const vendasDani = [
         `Com esse valor, você libera um universo de mais de **2.000 canais** e milhares de filmes/séries (**20 mil** filmes e **16 mil** séries!).`,
         `A instalação é fácil na sua Smart TV (LG/Samsung/Roku) e em qualquer dispositivo Android (TV Box, Google TV, Celular) com nosso app.`,
         `Lembrete: **iOS está fora**! Não funciona em iPhone ou iPad.`,
-        `Para começar seu teste, me diga: Qual a marca do seu dispositivo ${formattedFirstName}? Vou te mandar o tutorial completo! 😉`
+        `Para começar seu teste, me diga: Qual a marca do seu dispositivo, ${formattedFirstName}? Vou te mandar o tutorial completo! 😉`
     ],
     // Variação 4
     (formattedFirstName, PLAN_VALUE) => [
@@ -60,7 +60,7 @@ const vendasDani = [
         `Conteúdo de sobra! São mais de **2.000 canais** + todo o acervo de streaming (filmes, séries, animes) que ultrapassa as **36 mil** opções.`,
         `Onde assistir? Em Smart TVs (via IPTV) ou no seu Android (Celular/Box) com o app exclusivo.`,
         `🚫 Atenção: O sistema **não roda em iOS** (iPhone/iPad).`,
-        `Vamos testar por 3 horas? Me informa a marca e o tipo do seu dispositivo (Smart TV, TV Box, Android TV, Roku TV Celular) ${formattedFirstName}. Te envio o guia na hora! 🥳`
+        `Vamos testar por 3 horas? Me informa a marca e o tipo do seu dispositivo (Smart TV, Android TV, Celular), ${formattedFirstName}? Te envio o guia na hora! 🥳`
     ],
     // Variação 5
     (formattedFirstName, PLAN_VALUE) => [
@@ -69,7 +69,7 @@ const vendasDani = [
         `Você terá acesso total a mais de **2.000 canais**, **20 mil filmes** e **16 mil séries**! O tédio vai acabar!`,
         `Compatível com TVs Samsung, LG, Roku e todo o ecossistema Android (TV Box, Celular).`,
         `⚠️ Recado rápido: Usuários de **iOS (iPhone/iPad) não são suportados**.`,
-        `Para liberarmos seu teste, me diga ${formattedFirstName}: Qual a marca e o modelo do dispositivo onde você vai instalar? Assim acerto no tutorial! 📺`
+        `Para liberarmos seu teste, me diga, ${formattedFirstName}: Qual a marca e o modelo do dispositivo onde você vai instalar? Assim acerto no tutorial! 📺`
     ],
     // Variação 6
     (formattedFirstName, PLAN_VALUE) => [
@@ -78,7 +78,7 @@ const vendasDani = [
         `A experiência é completa: São mais de **2.000 canais** e um catálogo atualizado com mais de **36 mil** títulos entre séries, filmes e desenhos!`,
         `Funciona em todas as Smart TVs (via IPTV) e dispositivos Android (com o nosso aplicativo P2P).`,
         `Não se esqueça: **Não há compatibilidade com iOS**.`,
-        `Me diga a marca do seu dispositivo ${formattedFirstName}? Assim eu te ajudo a instalar o quanto antes! 😉`
+        `Me diga a marca do seu dispositivo, ${formattedFirstName}? Assim eu te ajudo a instalar o quanto antes! 😉`
     ],
     // Variação 7
     (formattedFirstName, PLAN_VALUE) => [
@@ -87,7 +87,7 @@ const vendasDani = [
         `Pelo valor, você ganha acesso ilimitado a **2.000 canais** e ao acervo VOD (Vídeo On Demand) com **20 mil filmes** e **16 mil séries**.`,
         `O serviço é perfeito para Smart TVs (LG, Samsung) e qualquer ANDROIDTV, TV Box ou celular Android.`,
         `🚫 Por favor, note: O serviço **não suporta iOS** (iPhone/iPad).`,
-        `Para começar seu teste de 3 horas ${formattedFirstName}, me informe qual a marca da sua TV ou dispositivo que você vai usar. É rapidinho! 🥳`
+        `Para começar seu teste de 3 horas, ${formattedFirstName}, me informe qual a marca da sua TV ou dispositivo que você vai usar. É rapidinho! 🥳`
     ],
     // Variação 8
     (formattedFirstName, PLAN_VALUE) => [
@@ -206,6 +206,7 @@ const getAndroidTVInstallTutorial = () => {
     return mapToFulfillmentMessages(messages);
 };
 
+// Adicionado o TUTORIAL CELULAR que estava faltando no seu último index.js, mas no fluxo das suas Intents
 const getAndroidCelularInstallTutorial = () => {
     const messages = [
         "📱 Tutorial para Celular Android",
@@ -220,15 +221,27 @@ const getAndroidCelularInstallTutorial = () => {
     return mapToFulfillmentMessages(messages);
 };
 
+const getAmbiguousBrandQuestion = (marca) => {
+    const messages = [
+        `Certo, ${marca}! É uma marca excelente. 😉`,
+        `As TVs da ${marca} podem ter o sistema **Android TV** (ou Google TV) ou o sistema **Roku TV**.`,
+        `Para eu te ajudar com o tutorial exato, preciso saber qual o sistema da sua TV.`,
+        `Me diz uma coisa: a tela inicial dela tem a loja de apps da Google (o símbolo de um triângulo colorido do Play Store) ou o menu tem a opção 'Canais de Streaming' (com a logo do Roku)?`
+    ];
+    return mapToFulfillmentMessages(messages);
+};
+
+
+// FUNÇÃO ROBUSTA DE EXTRAÇÃO DE NOME (Corrigida)
 function extractUserName(req) {
-    // Tenta extrair o nome do parâmetro 'nomeuser'
+    // 1. Tenta extrair do parâmetro 'nomeuser'
     const nomeUserParam = req.body.queryResult.parameters && req.body.queryResult.parameters['nomeuser'];
     if (nomeUserParam) {
         if (typeof nomeUserParam === 'string' && nomeUserParam.length > 0) return nomeUserParam;
         if (typeof nomeUserParam === 'object' && nomeUserParam.name) return nomeUserParam.name;
     }
     
-    // Tenta extrair o nome do contexto 'sessao_cliente'
+    // 2. Tenta extrair do contexto 'sessao_cliente' (ou qualquer contexto com nomeuser)
     if (req.body.queryResult.outputContexts) {
         for (const context of req.body.queryResult.outputContexts) {
             if (context.parameters && context.parameters.nomeuser) {
@@ -251,31 +264,24 @@ app.post('/webhook', (req, res) => {
     let response = {};
     let fulfillmentMessages = [];
 
+    // Otimização: Extrai o nome no início
     const userName = extractUserName(req);
     
     // =================================================================
     // ***** LÓGICA DE INTENTS *****
     // =================================================================
     
-    if (intentName === "Default Welcome Intent") {
+    if (intentName === "Default Welcome Intent" || intentName === "CAPTURA DE NOME") {
         
         if (userName) {
             fulfillmentMessages = getPersonalizedMenu(userName);
-            response.fulfillmentMessages = fulfillmentMessages;
-            return res.json(response); 
+        } else if (intentName === "Default Welcome Intent") {
+            // Se o nome não está na welcome intent, pede o nome
+            response.fulfillmentText = "Que bom que você nos procurou! Para darmos continuidade ao seu atendimento, me informe seu nome, por favor. 😊";
+        } else {
+             // Fallback da captura de nome (usa "Cliente")
+             fulfillmentMessages = getPersonalizedMenu("Cliente");
         }
-        
-        const greeting = getGreeting();
-        response.fulfillmentText = `${greeting}, Seja bem-vindo(a) à MAGTV! Meu nome é Dani.\n\nComo posso te ajudar hoje?\n1️⃣ Novo Cliente\n2️⃣ Pagamento\n3️⃣ Suporte`;
-        
-    }
-    
-    // ***** INTENT DE CAPTURA DE NOME *****
-    else if (intentName === "CAPTURA DE NOME") { 
-        
-        let nomeParaSaudacao = userName || "Cliente"; 
-
-        fulfillmentMessages = getPersonalizedMenu(nomeParaSaudacao);
         
     }
 
@@ -286,18 +292,34 @@ app.post('/webhook', (req, res) => {
     else if (intentName === "Menu Principal - N1") { 
         
         let nomeParaPitch = userName || "Cliente"; 
-
-        fulfillmentMessages = getVendasPitch(nomeParaPitch, PLAN_VALUE);
+        
+        // Se o nome foi capturado, usa a variação de pitch aleatória
+        if (userName) {
+            fulfillmentMessages = getVendasPitch(nomeParaPitch, PLAN_VALUE);
+        } else {
+            // Lógica genérica se não há nome (usando a variação do seu código)
+            fulfillmentMessages = mapToFulfillmentMessages([
+                `Que maravilha! Fico muito feliz que você queira fazer parte da família MAGTV! 🥳`,
+                `Então, nosso plano de assinatura é o **Mensal**, e custa apenas **R$ ${PLAN_VALUE}**.`,
+                `Ele inclui:
+- Mais de **2.000** canais abertos e fechados
+- Mais de **20 mil** filmes
+- Mais de **14 mil** séries e novelas
+- Animes e desenhos`,
+                `Você pode usar em **Smart TVs Samsung, LG, Roku** (via IPTV) e em dispositivos **Android** (celulares, TV Box, Android TV) através do nosso app exclusivo.`,
+                `⚠️ Importante: **não funciona em iOS** (iPhone/iPad).`,
+                `Para te ajudar com a instalação, preciso de uma informação rapidinha:
+qual é a marca do seu dispositivo? Assim eu já te mando o tutorial certinho! 😉`
+            ]);
+        }
         
     } else if (intentName === "Menu Principal - N2 - select.number") { 
         
-        fulfillmentMessages = mapToFulfillmentMessages([
-            `Para realizar o pagamento ou renovar, é só usar a chave PIX abaixo:
+        response.fulfillmentText = `Para realizar o pagamento ou renovar, é só usar a chave PIX abaixo:
 Chave PIX: ${PIX_KEY}
 Nome: ${PIX_NAME}
 Valor: R$ ${PLAN_VALUE}
-Assim que você fizer o pagamento, me envie o comprovante, por favor! 😉`
-        ]);
+Assim que você fizer o pagamento, me envie o comprovante, por favor! 😉`;
 
     } else if (intentName === "Menu Principal - N3 - select.number" || intentName === "Suporte - Nome Capturado") { 
         
@@ -321,7 +343,7 @@ Assim que você fizer o pagamento, me envie o comprovante, por favor! 😉`
         fulfillmentMessages = getAndroidTVInstallTutorial();
 
     } else if (intentName === "TUTORIAL CELULAR") { 
-        fulfillmentMessages = getAndroidCelularInstallTutorial();
+        fulfillmentMessages = getAndroidCelularInstallTutorial(); // Usa a função que foi adicionada/restaurada
 
     } else if (intentName === "Sistemas de Confirmação") { 
         
@@ -348,14 +370,11 @@ Assim que você fizer o pagamento, me envie o comprovante, por favor! 😉`
         response.fulfillmentText = `Desculpe, não entendi sua mensagem. Por favor, escolha uma das opções do menu principal (1️⃣ Novo Cliente, 2️⃣ Pagamento ou 3️⃣ Suporte) ou entre em contato com o suporte em nosso número de WhatsApp.`;
     }
 
-    // Lógica final de retorno: prioriza fulfillmentMessages (com delay) se houver
-    if (fulfillmentMessages.length > 0 && !response.fulfillmentText) {
+    // Lógica final de retorno: prioriza fulfillmentMessages (com delay)
+    if (fulfillmentMessages.length > 0) {
         response.fulfillmentMessages = fulfillmentMessages;
-    } else if (fulfillmentMessages.length > 0 && response.fulfillmentText) {
-        // Se houver texto simples E mensagens (ex: Fallback), prioriza mensagens
-        response.fulfillmentMessages = fulfillmentMessages;
-        delete response.fulfillmentText; // Garante que apenas um tipo de resposta seja enviado
-    }
+        if (response.fulfillmentText) delete response.fulfillmentText;
+    } 
 
     res.json(response);
 
