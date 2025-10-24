@@ -4,7 +4,7 @@ const app = express();
 app.use(bodyParser.json()); 
 
 // =================================================================
-// INTEGRAÇÃO GEMINI - INÍCIO
+// INTEGRAÇÃO GEMINI - INÍCIO (CÓDIGO QUE ESTAVA FALTANDO)
 // =================================================================
 const { GoogleGenAI } = require('@google/genai');
 
@@ -46,6 +46,7 @@ async function callGemini(queryText, userName) {
 // =================================================================
 // INTEGRAÇÃO GEMINI - FIM
 // =================================================================
+
 
 // CONFIGURAÇÕES DO BOT
 const PIX_KEY = "94 98444-5961";
@@ -453,6 +454,7 @@ Aguarde um momento, vou encaminhar seu atendimento para o suporte.`;
     // ----------------------------------------------------------------
     } else if (intentName === "Default Fallback Intent") {
         // *** SMART FALLBACK COM GEMINI ***
+        // O await só funciona porque a função app.post é ASYNC!
         const geminiResponseText = await callGemini(queryText, userName);
         response.fulfillmentText = geminiResponseText;
         // ********************************
