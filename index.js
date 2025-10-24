@@ -1,12 +1,12 @@
-const express = require('express');
-const bodyParser = require('body-parser'); 
+// =================================================================
+// INTEGRAÇÃO GEMINI - INÍCIO (SINTAXE MODERNIZADA)
+// =================================================================
+import express from 'express';
+import bodyParser from 'body-parser';
+import { GoogleGenAI } from '@google/genai';
+
 const app = express();
 app.use(bodyParser.json()); 
-
-// =================================================================
-// INTEGRAÇÃO GEMINI - INÍCIO
-// =================================================================
-const { GoogleGenAI } = require('@google/genai');
 
 // Ele busca automaticamente a chave na variável de ambiente GEMINI_API_KEY do Render
 const ai = new GoogleGenAI({});
@@ -36,8 +36,8 @@ async function callGemini(queryText, userName) {
             },
         });
         
-        // A API mais antiga pode retornar a resposta em 'response.text' ou 'response.candidates[0].content.parts[0].text'
-        return response.text || (response.candidates && response.candidates[0].content.parts[0].text) || "Desculpe, a Dani não conseguiu gerar uma resposta agora. Tente novamente.";
+        // A API moderna retorna a resposta em 'response.text'
+        return response.text || "Desculpe, a Dani não conseguiu gerar uma resposta agora. Tente novamente.";
         
     } catch (error) {
         console.error("Erro ao chamar o Gemini:", error);
@@ -63,7 +63,7 @@ const frasesDani = [
     "Olá [Nome do Cliente]! Que bom que você veio! 😊 Eu sou a Dani, da MAGTV. ", 
     "Olá [Nome do Cliente]! Eu sou a Dani, atendente da MAGTV. É um prazer falar com você! 😊 ",
     "Uau! Que bom que você veio [Nome do Cliente]! Eu sou a Dani, a sua assistente na MAGTV! Estou super animada para te ajudar hoje! ",
-    "Ah, que ótimo te ver por aqui [Nome do Cliente]! Pode contar comigo, a Dani! Meu objetivo é deixar tudo mais fácil para você na MAGTV. ",
+    "Ah, que ótimo te ver por aqui [Nome do Cliente]! Pode contar comigo, a Dani! Meu objetivo é deixar tudo mais fácil para você na MAGTV! ",
     "Seja muito, muito bem-vindo(a) [Nome do Cliente]! Você está falando com a Dani, e eu cuido de tudo por aqui na MAGTV com o maior prazer! ",
     "Olá [Nome do Cliente]! É a Dani quem está te atendendo na MAGTV! É um prazer! "
 ];
@@ -290,7 +290,7 @@ const getAmbiguousBrandQuestion = (marca) => {
 // =================================================================
 // WEBHOOK PRINCIPAL
 // =================================================================
-app.post('/webhook', async (req, res) => { 
+app.post('/webhook', async (req, res) => { // <-- MUDANÇA CRUCIAL: AGORA É ASYNC!
   try {
     const intentName = req.body.queryResult.intent.displayName;
     const queryText = req.body.queryResult.queryText;
