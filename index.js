@@ -1,52 +1,7 @@
-// =================================================================
-// INTEGRAÇÃO GEMINI - INÍCIO (SINTAXE MODERNIZADA)
-// =================================================================
-import express from 'express';
-import bodyParser from 'body-parser';
-import { GoogleGenAI } from '@google/genai';
-
+const express = require('express');
+const bodyParser = require('body-parser'); 
 const app = express();
 app.use(bodyParser.json()); 
-
-// Ele busca automaticamente a chave na variável de ambiente GEMINI_API_KEY do Render
-const ai = new GoogleGenAI({});
-
-// Este é o prompt que dá a personalidade da Dani ao Gemini
-const SYSTEM_INSTRUCTION = `
-Você é Dani, a assistente virtual e atendente primária da MAGTV. Sua missão é responder perguntas complexas dos clientes (suporte ou dúvidas gerais) com base no histórico da conversa, mantendo uma personalidade amigável, prestativa e profissional. Você funciona como um "Smart Fallback" para o bot principal.
-
-REGRAS:
-1. NUNCA mencione que você é um modelo de linguagem (LLM) ou um programa de IA. Você é a Dani.
-2. Use emojis de forma amigável (😊, 👍, 👋).
-3. A MAGTV não é compatível com iOS (iPhone/iPad). Se perguntarem, informe de forma educada e sugira Android.
-4. Se for perguntado sobre valores ou PIX, responda com os dados fixos: Plano Mensal R$ 30,00, PIX 94 98444-5961 (Davi Eduardo Borges).
-`;
-
-// Função assíncrona para chamar o Gemini
-async function callGemini(queryText, userName) {
-    const userPrompt = `${userName ? `O cliente ${userName} disse: ` : 'O cliente disse: '}` + queryText;
-    
-    try {
-        const response = await ai.models.generateContent({
-            model: 'gemini-2.5-flash',
-            contents: userPrompt,
-            config: {
-                systemInstruction: SYSTEM_INSTRUCTION,
-                temperature: 0.5,
-            },
-        });
-        
-        // A API moderna retorna a resposta em 'response.text'
-        return response.text || "Desculpe, a Dani não conseguiu gerar uma resposta agora. Tente novamente.";
-        
-    } catch (error) {
-        console.error("Erro ao chamar o Gemini:", error);
-        return "Desculpe, a Dani está com problemas técnicos no momento. Por favor, tente novamente mais tarde.";
-    }
-}
-// =================================================================
-// INTEGRAÇÃO GEMINI - FIM
-// =================================================================
 
 // CONFIGURAÇÕES DO BOT
 const PIX_KEY = "94 98444-5961";
@@ -63,7 +18,7 @@ const frasesDani = [
     "Olá [Nome do Cliente]! Que bom que você veio! 😊 Eu sou a Dani, da MAGTV. ", 
     "Olá [Nome do Cliente]! Eu sou a Dani, atendente da MAGTV. É um prazer falar com você! 😊 ",
     "Uau! Que bom que você veio [Nome do Cliente]! Eu sou a Dani, a sua assistente na MAGTV! Estou super animada para te ajudar hoje! ",
-    "Ah, que ótimo te ver por aqui [Nome do Cliente]! Pode contar comigo, a Dani! Meu objetivo é deixar tudo mais fácil para você na MAGTV! ",
+    "Ah, que ótimo te ver por aqui [Nome do Cliente]! Pode contar comigo, a Dani! Meu objetivo é deixar tudo mais fácil para você na MAGTV. ",
     "Seja muito, muito bem-vindo(a) [Nome do Cliente]! Você está falando com a Dani, e eu cuido de tudo por aqui na MAGTV com o maior prazer! ",
     "Olá [Nome do Cliente]! É a Dani quem está te atendendo na MAGTV! É um prazer! "
 ];
@@ -290,7 +245,7 @@ const getAmbiguousBrandQuestion = (marca) => {
 // =================================================================
 // WEBHOOK PRINCIPAL
 // =================================================================
-app.post('/webhook', async (req, res) => { // <-- MUDANÇA CRUCIAL: AGORA É ASYNC!
+app.post('/webhook', (req, res) => {
   try {
     const intentName = req.body.queryResult.intent.displayName;
     const queryText = req.body.queryResult.queryText;
@@ -347,16 +302,14 @@ app.post('/webhook', async (req, res) => { // <-- MUDANÇA CRUCIAL: AGORA É ASY
     // =================================================================
     if (intentName === "Default Welcome Intent") {
         
-        if (userName) {
-             // Se o nome foi capturado, envia a saudação personalizada e o menu.
-            fulfillmentMessages = getPersonalizedMenu(userName);
-            response.fulfillmentMessages = fulfillmentMessages;
-            return res.json(response); 
-        }
+        // CORREÇÃO APLICADA AQUI: Garante que a lógica de boas-vindas e o menu seja SEMPRE executada,
+        // usando "Cliente" como fallback se o nome não for capturado (userName).
+        let nomeParaSaudacao = userName || "Cliente"; 
         
-        // Lógica estática SE O NOME NÃO FOI CAPTURADO
-        const greeting = getGreeting();
-        response.fulfillmentText = `Olá! ${greeting}, Seja bem-vindo(a) à MAGTV! Meu nome é Dani.\n\nComo posso te ajudar hoje?\n1️⃣ Novo Cliente\n2️⃣ Pagamento\n3️⃣ Suporte`;
+        fulfillmentMessages = getPersonalizedMenu(nomeParaSaudacao);
+        
+        response.fulfillmentMessages = fulfillmentMessages;
+        return res.json(response); 
         
     }
 
@@ -453,11 +406,8 @@ Aguarde um momento, vou encaminhar seu atendimento para o suporte.`;
     // 3. INTENÇÕES PADRÃO (Fallback/Resto)
     // ----------------------------------------------------------------
     } else if (intentName === "Default Fallback Intent") {
-        // *** SMART FALLBACK COM GEMINI ***
-        // O await só funciona porque a função app.post é ASYNC!
-        const geminiResponseText = await callGemini(queryText, userName);
-        response.fulfillmentText = geminiResponseText;
-        // ********************************
+        // Fallback estático (Sem Gemini)
+        response.fulfillmentText = `Desculpe, não entendi. Por favor, escolha uma das opções do menu principal (1️⃣ Novo Cliente, 2️⃣ Pagamento ou 3️⃣ Suporte) ou entre em contato com o suporte em nosso número de WhatsApp.`;
         
     } else {
         response.fulfillmentText = `Desculpe, não entendi sua mensagem. Por favor, escolha uma das opções do menu principal (1️⃣ Novo Cliente, 2️⃣ Pagamento ou 3️⃣ Suporte) ou entre em contato com o suporte em nosso número de WhatsApp.`;
