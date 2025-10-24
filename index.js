@@ -1,7 +1,7 @@
 const express = require('express');
-const bodyParser = require('body-parser'); // <--- CORREÇÃO DE AMBIENTE: ADICIONADO body-parser
+const bodyParser = require('body-parser');
 const app = express();
-app.use(bodyParser.json()); // <--- CORREÇÃO DE AMBIENTE: TROCADO express.json() por bodyParser.json()
+app.use(bodyParser.json()); 
 
 // CONFIGURAÇÕES DO BOT
 const PIX_KEY = "94 98444-5961";
@@ -24,7 +24,6 @@ const frasesDani = [
 ];
 // =================================================================
 // LISTA DE VARIAÇÕES PARA O PITCH DE VENDAS (MENU PRINCIPAL - N1)
-// Garantido em 8 variações.
 // =================================================================
 const vendasDani = [
     // Variação 1
@@ -121,14 +120,13 @@ const mapToFulfillmentMessages = (messages) => {
 };
 
 // =================================================================
-// FUNÇÃO PARA GERAR A SAUDAÇÃO PERSONALIZADA E O MENU COM DELAY
+// FUNÇÃO PARA GERAR A SAUDAÇÃO PERSONALIZADA E O MENU
 // =================================================================
 const getPersonalizedMenu = (nomeCliente) => {
     
     const indexAleatorio = Math.floor(Math.random() * frasesDani.length);
     let saudacao = frasesDani[indexAleatorio];
 
-    // Formata o nome para usar apenas o primeiro nome com a primeira letra maiúscula
     const nomeFormatado = nomeCliente.split(' ')[0].charAt(0).toUpperCase() + nomeCliente.split(' ')[0].slice(1).toLowerCase();
     saudacao = saudacao.replace('[Nome do Cliente]', nomeFormatado);
     
@@ -148,25 +146,20 @@ Como posso te ajudar hoje? Por favor, escolha uma das opções abaixo:
 // =================================================================
 const getVendasPitch = (nomeCliente, PLAN_VALUE) => {
     
-    // 1. Formata o primeiro nome do cliente (Garantindo que mesmo que a Intent envie o nome completo, só o primeiro nome seja usado no pitch)
     const firstName = nomeCliente.split(' ')[0];
     const formattedFirstName = firstName.charAt(0).toUpperCase() + firstName.slice(1).toLowerCase();
 
-    // 2. Escolhe uma variação aleatória
     const indexAleatorio = Math.floor(Math.random() * vendasDani.length);
     const pitchFunction = vendasDani[indexAleatorio];
 
-    // 3. Executa a função do pitch com o nome formatado e o valor do plano
     const pitchMessages = pitchFunction(formattedFirstName, PLAN_VALUE);
     
-    // 4. Mapeia para o formato de mensagens do Dialogflow
     return mapToFulfillmentMessages(pitchMessages);
 };
 // =================================================================
-// FUNÇÕES REUTILIZÁVEIS PARA TUTORIAIS (RESTAURADAS COMPLETAS)
+// FUNÇÕES REUTILIZÁVEIS PARA TUTORIAIS 
 // =================================================================
 
-// 1. TUTORIAL SMART TV (SAMSUNG / LG)
 const getSmartTVInstallTutorial = () => {
     const messages = [
         "📺 Como instalar o XCloud TV na sua TV",
@@ -182,7 +175,6 @@ const getSmartTVInstallTutorial = () => {
     return mapToFulfillmentMessages(messages);
 };
 
-// 2. TUTORIAL ROKU (CONTEÚDO RESTAURADO)
 const getRokuInstallTutorial = () => {
     const messages = [
         "📺 Como instalar o XCloud TV na sua TV",
@@ -198,7 +190,6 @@ const getRokuInstallTutorial = () => {
     return mapToFulfillmentMessages(messages);
 };
 
-// 3. TUTORIAL ANDROID TV / TV BOX (CONTEÚDO RESTAURADO)
 const getAndroidTVInstallTutorial = () => {
     const messages = [
         "📺 Tutorial para Android TV (TV Box)",
@@ -215,7 +206,6 @@ const getAndroidTVInstallTutorial = () => {
     return mapToFulfillmentMessages(messages);
 };
 
-// 4. TUTORIAL CELULAR ANDROID (COM O SEU TEXTO ESPECÍFICO)
 const getAndroidCelularInstallTutorial = () => {
     const messages = [
         "📱 Tutorial para Celular Android",
@@ -230,16 +220,26 @@ const getAndroidCelularInstallTutorial = () => {
     return mapToFulfillmentMessages(messages);
 };
 
-// 5. PERGUNTA DE DESAMBIGUAÇÃO (Marca Ambígüa)
-const getAmbiguousBrandQuestion = (marca) => {
-    const messages = [
-        `Certo, ${marca}! É uma marca excelente. 😉`,
-        `As TVs da ${marca} podem ter o sistema **Android TV** (ou Google TV) ou o sistema **Roku TV**.`,
-        `Para eu te ajudar com o tutorial exato, preciso saber qual o sistema da sua TV.`,
-        `Me diz uma coisa: a tela inicial dela tem a loja de apps da Google (o símbolo de um triângulo colorido do Play Store) ou o menu tem a opção 'Canais de Streaming' (com a logo do Roku)?`
-    ];
-    return mapToFulfillmentMessages(messages);
-};
+function extractUserName(req) {
+    // Tenta extrair o nome do parâmetro 'nomeuser'
+    const nomeUserParam = req.body.queryResult.parameters && req.body.queryResult.parameters['nomeuser'];
+    if (nomeUserParam) {
+        if (typeof nomeUserParam === 'string' && nomeUserParam.length > 0) return nomeUserParam;
+        if (typeof nomeUserParam === 'object' && nomeUserParam.name) return nomeUserParam.name;
+    }
+    
+    // Tenta extrair o nome do contexto 'sessao_cliente'
+    if (req.body.queryResult.outputContexts) {
+        for (const context of req.body.queryResult.outputContexts) {
+            if (context.parameters && context.parameters.nomeuser) {
+                const contextNomeUser = context.parameters.nomeuser;
+                if (typeof contextNomeUser === 'string' && contextNomeUser.length > 0) return contextNomeUser;
+                if (typeof contextNomeUser === 'object' && contextNomeUser.name) return contextNomeUser.name;
+            }
+        }
+    }
+    return null;
+}
 
 
 // =================================================================
@@ -248,96 +248,49 @@ const getAmbiguousBrandQuestion = (marca) => {
 app.post('/webhook', (req, res) => {
   try {
     const intentName = req.body.queryResult.intent.displayName;
-    const queryText = req.body.queryResult.queryText;
     let response = {};
     let fulfillmentMessages = [];
 
-    // Tenta capturar o nome do cliente usando o parâmetro 'nomeuser'
-    const nomeUserParam = req.body.queryResult.parameters['nomeuser']; 
-    let userName = null;
-
-    // --- LÓGICA DE EXTRAÇÃO DE NOME SIMPLIFICADA E ROBUSTA ---
-    if (nomeUserParam) {
-        if (typeof nomeUserParam === 'string' && nomeUserParam.length > 0) {
-            // Caso seja uma string simples (nome completo)
-            userName = nomeUserParam;
-        } else if (typeof nomeUserParam === 'object' && nomeUserParam.name) {
-            // Caso seja um objeto com a chave 'name' (padrão de entidade @sys.person)
-            userName = nomeUserParam.name;
-        } else if (typeof nomeUserParam === 'object' && nomeUserParam.displayName) {
-             // Caso seja um objeto com a chave 'displayName' (alguns formatos de context)
-            userName = nomeUserParam.displayName;
-        } else if (typeof nomeUserParam === 'object' && nomeUserParam.structValue && nomeUserParam.structValue.name) {
-             // Tentativa extra para formatos complexos
-             userName = nomeUserParam.structValue.name;
-        }
-    }
-    
-    // --- LÓGICA DE EXTRAÇÃO DE NOME DO CONTEXTO (FALLBACK) ---
-    // Procura o nome dentro de qualquer contexto que use 'nomeuser'
-    if (!userName && req.body.queryResult.outputContexts) {
-        const contexts = req.body.queryResult.outputContexts;
-        for (const context of contexts) {
-            if (context.parameters && context.parameters.nomeuser) {
-                
-                const contextNomeUser = context.parameters.nomeuser;
-                
-                if (typeof contextNomeUser === 'string' && contextNomeUser.length > 0) {
-                    userName = contextNomeUser;
-                    break; 
-                } else if (typeof contextNomeUser === 'object' && contextNomeUser.name) { 
-                    userName = contextNomeUser.name;
-                    break;
-                } else if (typeof contextNomeUser === 'object' && contextNomeUser.displayName) { 
-                    userName = contextNomeUser.displayName;
-                    break;
-                }
-            }
-        }
-    }
-
+    const userName = extractUserName(req);
     
     // =================================================================
-    // ***** LÓGICA DE SAUDAÇÃO INICIAL (Default Welcome Intent) *****
+    // ***** LÓGICA DE INTENTS *****
     // =================================================================
+    
     if (intentName === "Default Welcome Intent") {
         
         if (userName) {
-             // Se o nome foi capturado, envia a saudação personalizada e o menu.
             fulfillmentMessages = getPersonalizedMenu(userName);
             response.fulfillmentMessages = fulfillmentMessages;
             return res.json(response); 
         }
         
-        // Lógica estática SE O NOME NÃO FOI CAPTURADO
         const greeting = getGreeting();
-        response.fulfillmentText = `Olá! ${greeting}, Seja bem-vindo(a) à MAGTV! Meu nome é Dani.\n\nComo posso te ajudar hoje?\n1️⃣ Novo Cliente\n2️⃣ Pagamento\n3️⃣ Suporte`;
+        response.fulfillmentText = `${greeting}, Seja bem-vindo(a) à MAGTV! Meu nome é Dani.\n\nComo posso te ajudar hoje?\n1️⃣ Novo Cliente\n2️⃣ Pagamento\n3️⃣ Suporte`;
+        
+    }
+    
+    // ***** INTENT DE CAPTURA DE NOME *****
+    else if (intentName === "CAPTURA DE NOME") { 
+        
+        let nomeParaSaudacao = userName || "Cliente"; 
+
+        fulfillmentMessages = getPersonalizedMenu(nomeParaSaudacao);
         
     }
 
 
     // ----------------------------------------------------------------
-    // 1. INTENÇÕES DO MENU PRINCIPAL (TRATAMENTO DE NOME E FLUXO)
+    // 1. INTENÇÕES DO MENU PRINCIPAL 
     // ----------------------------------------------------------------
-    if (intentName === "Menu Principal - N1") { 
-        // Opção 1: Novo Cliente 
+    else if (intentName === "Menu Principal - N1") { 
         
-        let nomeParaPitch = userName;
-        
-        // Se a Intent falhar miseravelmente em passar o nome, usamos o "Cliente" 
-        // como segurança extrema, mas o nome do cliente deve ser usado.
-        if (!nomeParaPitch) {
-             nomeParaPitch = "Cliente"; 
-        }
+        let nomeParaPitch = userName || "Cliente"; 
 
-        // Força o uso da função de pitch aleatório, que usa nomeParaPitch
         fulfillmentMessages = getVendasPitch(nomeParaPitch, PLAN_VALUE);
-            
-        response.fulfillmentMessages = fulfillmentMessages;
-        return res.json(response); 
         
     } else if (intentName === "Menu Principal - N2 - select.number") { 
-        // Opção 2: Pagamento 
+        
         fulfillmentMessages = mapToFulfillmentMessages([
             `Para realizar o pagamento ou renovar, é só usar a chave PIX abaixo:
 Chave PIX: ${PIX_KEY}
@@ -346,29 +299,11 @@ Valor: R$ ${PLAN_VALUE}
 Assim que você fizer o pagamento, me envie o comprovante, por favor! 😉`
         ]);
 
-    } else if (intentName === "Menu Principal - N3 - select.number") { 
-        // Opção 3: Suporte 
+    } else if (intentName === "Menu Principal - N3 - select.number" || intentName === "Suporte - Nome Capturado") { 
         
-        // Se o nome foi capturado, usa a saudação personalizada e o menu (caso o fluxo volte aqui)
-        if (userName) {
-            fulfillmentMessages = getPersonalizedMenu(userName);
-            response.fulfillmentMessages = fulfillmentMessages;
-            return res.json(response); 
-        } 
+        const formattedFirstName = userName ? userName.split(' ')[0].charAt(0).toUpperCase() + userName.split(' ')[0].slice(1).toLowerCase() : "Cliente";
         
-    } else if (intentName === "Suporte - Nome Capturado") { 
-        
-        let responseText = `Aguarde um momento, vou encaminhar seu atendimento para o suporte.`;
-        
-        if (userName) {
-            const firstName = userName.split(' ')[0];
-            const formattedFirstName = userName.charAt(0).toUpperCase() + userName.slice(1).toLowerCase();
-            
-            responseText = `Certo, ${formattedFirstName}.
-Aguarde um momento, vou encaminhar seu atendimento para o suporte.`;
-        }
-        
-        response.fulfillmentText = responseText;
+        response.fulfillmentText = `Certo, ${formattedFirstName}. Aguarde um momento, vou encaminhar seu atendimento para o suporte.`;
         
     } else if (intentName === "TESTE") {
         response.fulfillmentText = `Aguarde um momento...`;
@@ -376,7 +311,6 @@ Aguarde um momento, vou encaminhar seu atendimento para o suporte.`;
     // ----------------------------------------------------------------
     // 2. FLUXO DE TUTORIAIS
     // ----------------------------------------------------------------
-
     } else if (intentName === "TUTORIAL SMARTV") {
         fulfillmentMessages = getSmartTVInstallTutorial();
 
@@ -386,7 +320,7 @@ Aguarde um momento, vou encaminhar seu atendimento para o suporte.`;
     } else if (intentName === "TUTORIAL ANDROIDTV") { 
         fulfillmentMessages = getAndroidTVInstallTutorial();
 
-    } else if (intentName === "TUTORIAL CELULAR") { // INTENT CELULAR ADICIONADA AQUI
+    } else if (intentName === "TUTORIAL CELULAR") { 
         fulfillmentMessages = getAndroidCelularInstallTutorial();
 
     } else if (intentName === "Sistemas de Confirmação") { 
@@ -414,10 +348,14 @@ Aguarde um momento, vou encaminhar seu atendimento para o suporte.`;
         response.fulfillmentText = `Desculpe, não entendi sua mensagem. Por favor, escolha uma das opções do menu principal (1️⃣ Novo Cliente, 2️⃣ Pagamento ou 3️⃣ Suporte) ou entre em contato com o suporte em nosso número de WhatsApp.`;
     }
 
-    // Lógica final de retorno: prioriza fulfillmentMessages (com delay)
-    if (fulfillmentMessages.length > 0) {
+    // Lógica final de retorno: prioriza fulfillmentMessages (com delay) se houver
+    if (fulfillmentMessages.length > 0 && !response.fulfillmentText) {
         response.fulfillmentMessages = fulfillmentMessages;
-    } 
+    } else if (fulfillmentMessages.length > 0 && response.fulfillmentText) {
+        // Se houver texto simples E mensagens (ex: Fallback), prioriza mensagens
+        response.fulfillmentMessages = fulfillmentMessages;
+        delete response.fulfillmentText; // Garante que apenas um tipo de resposta seja enviado
+    }
 
     res.json(response);
 
