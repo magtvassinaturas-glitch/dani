@@ -1,18 +1,15 @@
 {
-  "name": "magtv-dani-api",
+  "name": "dani-ai",
   "version": "1.0.0",
-  "description": "API auxiliar para o bot Dani da MAGTV.",
+  "description": "Dialogflow Webhook para Dani AI Bot",
   "main": "index.js",
+  "type": "module",
   "scripts": {
     "start": "node index.js"
   },
   "dependencies": {
-    "express": "^4.18.2",
+    "@google/genai": "^0.2.1",
     "body-parser": "^1.20.2",
-    "@google/genai": "^1.0.0" 
-  },
-  "type": "module", 
-  "engines": {
-    "node": "18" 
+    "express": "^4.18.2"
   }
 }
