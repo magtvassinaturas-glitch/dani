@@ -102,7 +102,7 @@ const vendasDani = [
 // =================================================================
 
 
-// Função para obter a saudação do dia
+// Função para obter a saudação do dia (MANTIDA, mas não usada no Welcome Intent)
 function getGreeting() {
   const hour = new Date().getHours();
   if (hour >= 6 && hour < 12) {
@@ -120,10 +120,11 @@ const mapToFulfillmentMessages = (messages) => {
 };
 
 // =================================================================
-// FUNÇÃO PARA GERAR A SAUDAÇÃO PERSONALIZADA E O MENU COM DELAY
+// FUNÇÃO PARA GERAR A SAUDAÇÃO PERSONALIZADA E O MENU (USANDO VARIAÇÕES)
 // =================================================================
 const getPersonalizedMenu = (nomeCliente) => {
     
+    // **USANDO VARIAÇÕES DE FRASES AQUI (frasesDani)**
     const indexAleatorio = Math.floor(Math.random() * frasesDani.length);
     let saudacao = frasesDani[indexAleatorio];
 
@@ -138,11 +139,12 @@ Como posso te ajudar hoje? Por favor, escolha uma das opções abaixo:
 3️⃣ Suporte
     `;
 
+    // **SAÍDA SEQUENCIAL**
     return mapToFulfillmentMessages([saudacao, menuPrincipal]);
 };
 
 // =================================================================
-// FUNÇÃO PARA GERAR O PITCH DE VENDAS ALEATÓRIO
+// FUNÇÃO PARA GERAR O PITCH DE VENDAS ALEATÓRIO (USANDO VARIAÇÕES)
 // =================================================================
 const getVendasPitch = (nomeCliente, PLAN_VALUE) => {
     
@@ -151,6 +153,7 @@ const getVendasPitch = (nomeCliente, PLAN_VALUE) => {
     const formattedFirstName = firstName.charAt(0).toUpperCase() + firstName.slice(1).toLowerCase();
 
     // 2. Escolhe uma variação aleatória
+    // **USANDO VARIAÇÕES DE PITCH AQUI (vendasDani)**
     const indexAleatorio = Math.floor(Math.random() * vendasDani.length);
     const pitchFunction = vendasDani[indexAleatorio];
 
@@ -158,10 +161,11 @@ const getVendasPitch = (nomeCliente, PLAN_VALUE) => {
     const pitchMessages = pitchFunction(formattedFirstName, PLAN_VALUE);
     
     // 4. Mapeia para o formato de mensagens do Dialogflow
+    // **SAÍDA SEQUENCIAL**
     return mapToFulfillmentMessages(pitchMessages);
 };
 // =================================================================
-// FUNÇÕES REUTILIZÁVEIS PARA TUTORIAIS (RESTAURADAS COMPLETAS)
+// FUNÇÕES REUTILIZÁVEIS PARA TUTORIAIS (MANTIDAS)
 // =================================================================
 
 // 1. TUTORIAL SMART TV (SAMSUNG / LG)
@@ -177,6 +181,7 @@ const getSmartTVInstallTutorial = () => {
         "5. Agora é só inserir seu login e senha para acessar todo o conteúdo.",
         "Envie a palavra **TESTE** para enviarmos o seu acesso!"
     ];
+    // **SAÍDA SEQUENCIAL**
     return mapToFulfillmentMessages(messages);
 };
 
@@ -193,6 +198,7 @@ const getRokuInstallTutorial = () => {
         "6. Aguarde a instalação e clique em *Ir para o canal*.",
         "Por fim, envie a palavra **TESTE** para enviarmos o seu login e senha!"
     ];
+    // **SAÍDA SEQUENCIAL**
     return mapToFulfillmentMessages(messages);
 };
 
@@ -210,6 +216,7 @@ const getAndroidTVInstallTutorial = () => {
         "* Aguarde a instalação ser concluída.",
         "Envie a palavra **TESTE** para enviarmos o seu acesso!"
     ];
+    // **SAÍDA SEQUENCIAL**
     return mapToFulfillmentMessages(messages);
 };
 
@@ -222,6 +229,7 @@ const getAmbiguousBrandQuestion = (marca) => {
         `Para eu te ajudar com o tutorial exato, preciso saber qual o sistema da sua TV.`,
         `Me diz uma coisa: a tela inicial dela tem a loja de apps da Google (o símbolo de um triângulo colorido do Play Store) ou o menu tem a opção 'Canais de Streaming' (com a logo do Roku)?`
     ];
+    // **SAÍDA SEQUENCIAL**
     return mapToFulfillmentMessages(messages);
 };
 
@@ -258,16 +266,25 @@ app.post('/webhook', (req, res) => {
     if (intentName === "Default Welcome Intent") {
         
         if (userName) {
-             // Se o nome foi capturado, envia a saudação personalizada e o menu.
+             // Se o nome foi capturado, USA VARIAÇÃO e envia a saudação personalizada e o menu SEQUENCIALMENTE.
             fulfillmentMessages = getPersonalizedMenu(userName);
             response.fulfillmentMessages = fulfillmentMessages;
             return res.json(response); 
         }
         
-        // Lógica estática SE O NOME NÃO FOI CAPTURADO
-        const greeting = getGreeting();
-        response.fulfillmentText = `Olá! ${greeting}, Seja bem-vindo(a) à MAGTV! Meu nome é Dani.\n\nComo posso te ajudar hoje?\n1️⃣ Novo Cliente\n2️⃣ Pagamento\n3️⃣ Suporte`;
-        
+        // Lógica estática SE O NOME NÃO FOI CAPTURADO.
+        // **REMOVIDO getGreeting() PARA CUMPRIR REQUISITO DE NÃO TER BOM DIA/TARDE/NOITE**
+        // **USANDO fulfillmentMessages para garantir SAÍDA SEQUENCIAL**
+        fulfillmentMessages = mapToFulfillmentMessages([
+            `Olá! Seja muito bem-vindo(a) à MAGTV! Meu nome é Dani.`,
+            `Como posso te ajudar hoje? Por favor, escolha uma das opções abaixo:
+
+1️⃣ Novo Cliente
+2️⃣ Pagamento
+3️⃣ Suporte`
+        ]);
+        response.fulfillmentMessages = fulfillmentMessages;
+        return res.json(response);
     }
 
 
@@ -277,7 +294,7 @@ app.post('/webhook', (req, res) => {
     if (intentName === "Menu Principal - N1") { 
         // Opção 1: Novo Cliente 
         
-        // Se o nome está na requisição (veio via contexto), usa a variação de pitch aleatória
+        // Se o nome está na requisição (veio via contexto), USA VARIAÇÃO DE PITCH e envia SEQUENCIALMENTE
         if (userName) {
             
             fulfillmentMessages = getVendasPitch(userName, PLAN_VALUE);
@@ -287,21 +304,19 @@ app.post('/webhook', (req, res) => {
 
         } 
         
-        // Lógica genérica se não há nome (Mantida simples, mas formatada)
+        // Lógica genérica se não há nome (MANTIDA FIXA, mas enviando SEQUENCIALMENTE)
         fulfillmentMessages = mapToFulfillmentMessages([
             `Que maravilha! Fico muito feliz que você queira fazer parte da família MAGTV! 🥳`,
-            `Então, nosso plano de assinatura é o **Mensal**, e custa apenas **R$ ${PLAN_VALUE}**.`,
-            `Ele inclui:
-- Mais de **2.000** canais abertos e fechados
-- Mais de **20 mil** filmes
-- Mais de **14 mil** séries e novelas
-- Animes e desenhos`,
-            `Você pode usar em **Smart TVs Samsung, LG, Roku** (via IPTV) e em dispositivos **Android** (celulares, TV Box, Android TV) através do nosso app exclusivo.`,
-            `⚠️ Importante: **não funciona em iOS** (iPhone/iPad).`,
-            `Para te ajudar com a instalação, preciso de uma informação rapidinha:
-qual é a marca do seu dispositivo? Assim eu já te mando o tutorial certinho! 😉`
+            `Deixa eu te contar um pouco sobre o nosso plano: O **Mensal** custa apenas **R$ ${PLAN_VALUE}**.`,
+            `Ele inclui acesso a mais de **2.000 canais**, **20 mil filmes**, **16 mil séries** e desenhos para toda a família! É conteúdo que não acaba mais! 🚀`,
+            `Compatibilidade: Funciona perfeitamente em Smart TVs (Samsung, LG, Roku via IPTV) e dispositivos Android (Celulares, TV Box, Android TV) com nosso app exclusivo.`,
+            `⚠️ Importante: *Não funciona em iOS* (iPhone/iPad).`,
+            `Para te ajudar com a instalação, preciso de uma informação rapidinha: Você vai usar o serviço em SMARTV, ANDROIDTV ou Celular, e qual a marca do seu dispositivo? Assim eu já te mando o tutorial certinho! 😉`
         ]);
         
+        // **CORREÇÃO DE BUG**: Esta linha estava faltando, fazendo a resposta falhar.
+        response.fulfillmentMessages = fulfillmentMessages;
+        return res.json(response);
         
     } else if (intentName === "Menu Principal - N2 - select.number") { 
         // Opção 2: Pagamento 
@@ -309,9 +324,11 @@ qual é a marca do seu dispositivo? Assim eu já te mando o tutorial certinho! �
             `Para realizar o pagamento ou renovar, é só usar a chave PIX abaixo:
 Chave PIX: ${PIX_KEY}
 Nome: ${PIX_NAME}
-Valor: R$ ${PLAN_VALUE}
-Assim que você fizer o pagamento, me envie o comprovante, por favor! 😉`
+Valor: R$ ${PLAN_VALUE}`,
+            `Assim que você fizer o pagamento, me envie o comprovante, por favor! 😉`
         ]);
+        response.fulfillmentMessages = fulfillmentMessages;
+        return res.json(response);
 
     } else if (intentName === "Menu Principal - N3 - select.number") { 
         // Opção 3: Suporte 
@@ -323,13 +340,25 @@ Assim que você fizer o pagamento, me envie o comprovante, por favor! 😉`
             return res.json(response); 
         } 
         
+        // Se não tem nome, usa o menu genérico.
+        fulfillmentMessages = mapToFulfillmentMessages([
+            `Certo.`,
+            `Como posso te ajudar hoje? Por favor, escolha uma das opções abaixo:
+
+1️⃣ Novo Cliente
+2️⃣ Pagamento
+3️⃣ Suporte`
+        ]);
+        response.fulfillmentMessages = fulfillmentMessages;
+        return res.json(response);
+
     } else if (intentName === "Suporte - Nome Capturado") { 
         
         let responseText = `Aguarde um momento, vou encaminhar seu atendimento para o suporte.`;
         
         if (userName) {
             const firstName = userName.split(' ')[0];
-            const formattedFirstName = userName.charAt(0).toUpperCase() + userName.slice(1).toLowerCase();
+            const formattedFirstName = firstName.charAt(0).toUpperCase() + firstName.slice(1).toLowerCase();
             
             responseText = `Certo, ${formattedFirstName}.
 Aguarde um momento, vou encaminhar seu atendimento para o suporte.`;
@@ -341,44 +370,67 @@ Aguarde um momento, vou encaminhar seu atendimento para o suporte.`;
         response.fulfillmentText = `Aguarde um momento...`;
 
     // ----------------------------------------------------------------
-    // 2. FLUXO DE TUTORIAIS
+    // 2. FLUXO DE TUTORIAIS (TODOS JÁ USAM fulfillmentMessages)
     // ----------------------------------------------------------------
 
     } else if (intentName === "TUTORIAL SMARTV") {
         fulfillmentMessages = getSmartTVInstallTutorial();
+        response.fulfillmentMessages = fulfillmentMessages;
+        return res.json(response);
 
     } else if (intentName === "TUTORIAL ROKU") {
         fulfillmentMessages = getRokuInstallTutorial();
+        response.fulfillmentMessages = fulfillmentMessages;
+        return res.json(response);
 
     } else if (intentName === "TUTORIAL ANDROIDTV") { 
         fulfillmentMessages = getAndroidTVInstallTutorial();
+        response.fulfillmentMessages = fulfillmentMessages;
+        return res.json(response);
 
     } else if (intentName === "Sistemas de Confirmação") { 
         
         const lowerQuery = req.body.queryResult.queryText.toLowerCase();
+        let tutorialMessages = null;
 
         if (lowerQuery.includes('android') || lowerQuery.includes('google') || lowerQuery.includes('playstore') || lowerQuery.includes('triângulo') || lowerQuery.includes('apps google')) {
-             fulfillmentMessages = getAndroidTVInstallTutorial(); 
+             tutorialMessages = getAndroidTVInstallTutorial(); 
         
         } else if (lowerQuery.includes('roku') || lowerQuery.includes('streaming') || lowerQuery.includes('roxo') || lowerQuery.includes('canais')) {
-             fulfillmentMessages = getRokuInstallTutorial();
+             tutorialMessages = getRokuInstallTutorial();
              
         } else {
              response.fulfillmentText = "Não consegui identificar o sistema. Me diga apenas uma palavra: 'Android' ou 'Roku'?";
         }
-
+        
+        if (tutorialMessages) {
+             response.fulfillmentMessages = tutorialMessages;
+             return res.json(response);
+        }
 
     // ----------------------------------------------------------------
     // 3. INTENÇÕES PADRÃO (Fallback/Resto)
     // ----------------------------------------------------------------
     } else if (intentName === "Default Fallback Intent") {
-        response.fulfillmentText = `Desculpe, não entendi. Por favor, escolha uma das opções do menu principal (1️⃣ Novo Cliente, 2️⃣ Pagamento ou 3️⃣ Suporte) ou entre em contato com o suporte em nosso número de WhatsApp.`;
+        // **USANDO fulfillmentMessages para garantir SAÍDA SEQUENCIAL**
+        fulfillmentMessages = mapToFulfillmentMessages([
+            `Desculpe, não entendi.`,
+            `Por favor, escolha uma das opções do menu principal (1️⃣ Novo Cliente, 2️⃣ Pagamento ou 3️⃣ Suporte) ou entre em contato com o suporte em nosso número de WhatsApp.`
+        ]);
+        response.fulfillmentMessages = fulfillmentMessages;
+        return res.json(response);
         
     } else {
-        response.fulfillmentText = `Desculpe, não entendi sua mensagem. Por favor, escolha uma das opções do menu principal (1️⃣ Novo Cliente, 2️⃣ Pagamento ou 3️⃣ Suporte) ou entre em contato com o suporte em nosso número de WhatsApp.`;
+        // **USANDO fulfillmentMessages para garantir SAÍDA SEQUENCIAL**
+        fulfillmentMessages = mapToFulfillmentMessages([
+            `Desculpe, não entendi sua mensagem.`,
+            `Por favor, escolha uma das opções do menu principal (1️⃣ Novo Cliente, 2️⃣ Pagamento ou 3️⃣ Suporte) ou entre em contato com o suporte em nosso número de WhatsApp.`
+        ]);
+        response.fulfillmentMessages = fulfillmentMessages;
+        return res.json(response);
     }
 
-    // Lógica final de retorno: prioriza fulfillmentMessages (com delay)
+    // Lógica final de retorno: se alguma lógica acima não retornou, prioriza fulfillmentMessages
     if (fulfillmentMessages.length > 0) {
         response.fulfillmentMessages = fulfillmentMessages;
     } 
