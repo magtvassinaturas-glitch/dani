@@ -1,5 +1,7 @@
-const express = require('express');
-const bodyParser = require('body-parser'); 
+import express from 'express';
+import bodyParser from 'body-parser';
+// import { fileURLToPath } from 'url'; // Não é necessário para este script simples
+
 const app = express();
 app.use(bodyParser.json()); 
 
